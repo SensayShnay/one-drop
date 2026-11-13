@@ -18,3 +18,7 @@ key.pem
 *.wav
 *.aif
 *.aiff
+
+# node
+node_modules/
+.wrangler/

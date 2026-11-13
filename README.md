@@ -233,23 +233,26 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
 
 ## Layout
 
-- `index.html`  the page, the wake veil, all the styling
-- `src/surface.js`  WebGL2 height-field wave sim + shading
-- `src/audio.js`  Web Audio: hits, region layers, submerge, cavern, sequencer
-- `src/pins.js`  the pins: storage, placement, proximity sound
-- `src/soundings.js`  the soundings: stones, wavefronts, what rings when
-- `src/bowl.js`  the singing bowl: circle fitting, the drone it drives
-- `src/harp.js`  the rain harp: leaves, and what the rain does to them
-- `src/capture.js`  keeping a ripple: compositing the water and its marks, and the sound, as one file
-- `src/marks.js`  where everything on the water is, so a recording can show it
-- `src/drift.js`  what does not belong: the things that float in, and what they say
-- `src/story.js`  the cycle: the eight stages and what each does to the water
-- `src/creek.js`  the creek: the rocks, the surge, and what each one rings
-- `src/names.js`  the naming of water: the index, and what each kind is
-- `src/ice.js`  the ice: how a crack runs and branches, and the holes you melt
+Everything the browser loads lives in `public/`. Everything beside it — the
+Cloudflare config, `serve.py`, this file — is plumbing, and is never served.
+
+- `public/index.html`  the page, the wake veil, all the styling
+- `public/src/surface.js`  WebGL2 height-field wave sim + shading
+- `public/src/audio.js`  Web Audio: hits, region layers, submerge, cavern, sequencer
+- `public/src/pins.js`  the pins: storage, placement, proximity sound
+- `public/src/soundings.js`  the soundings: stones, wavefronts, what rings when
+- `public/src/bowl.js`  the singing bowl: circle fitting, the drone it drives
+- `public/src/harp.js`  the rain harp: leaves, and what the rain does to them
+- `public/src/capture.js`  keeping a ripple: compositing the water and its marks, and the sound, as one file
+- `public/src/marks.js`  where everything on the water is, so a recording can show it
+- `public/src/drift.js`  what does not belong: the things that float in, and what they say
+- `public/src/story.js`  the cycle: the eight stages and what each does to the water
+- `public/src/creek.js`  the creek: the rocks, the surge, and what each one rings
+- `public/src/names.js`  the naming of water: the index, and what each kind is
+- `public/src/ice.js`  the ice: how a crack runs and branches, and the holes you melt
   (the echo cave lives in audio.js `openCave`/`scatter` and main.js)
-- `src/main.js`  touch, drift, regions, weather, recording, wiring
-- `audio/`  compressed copies of the samples (originals untouched in Water Samples)
+- `public/src/main.js`  touch, drift, regions, weather, recording, wiring
+- `public/audio/`  compressed copies of the samples (originals untouched in Water Samples)
 
 ## About the audio
 
@@ -257,6 +260,30 @@ The recordings in `audio/` are compressed copies of commercial sample-pack
 material, used here as the voice of the piece. They are published with it so the
 work runs, not as a sample library: please do not lift them for your own
 projects. The code is another matter and you are welcome to it.
+
+## Deploying
+
+The live site is <https://one-drop.sheneurmenaker.workers.dev/>, served by
+Cloudflare Workers straight out of this repository.
+
+    git add -A
+    git commit -m "what changed"
+    git push
+
+That is the whole deploy. Pushing to `main` makes Cloudflare run
+`npx wrangler deploy`, which reads `wrangler.jsonc` and uploads `public/` as the
+new version of the site. It takes a minute or two; the Deployments tab on the
+Cloudflare dashboard shows the build and its log.
+
+To deploy from this machine instead of by pushing, `npm install` once and then
+`npm run deploy`. `npm run check` validates the config without deploying
+anything, which is worth doing before a push if you have touched
+`wrangler.jsonc`.
+
+Caching is set in `public/_headers`: the audio is immutable and cached for a
+year, `public/src/*` for five minutes, and `index.html` not at all — so a push
+reaches people on their next reload, while the 11 MB of samples is only ever
+fetched once. Renaming an audio file is the way to force it to be re-fetched.
 
 ## Still to come
 

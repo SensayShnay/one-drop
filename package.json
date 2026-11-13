@@ -1,0 +1,13 @@
+{
+  "name": "one-drop",
+  "private": true,
+  "description": "An abstract water surface you can play.",
+  "scripts": {
+    "start": "python3 serve.py",
+    "deploy": "wrangler deploy",
+    "check": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.48.0"
+  }
+}

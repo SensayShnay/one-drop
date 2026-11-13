@@ -1,0 +1,17 @@
+// How Cloudflare serves One Drop.
+//
+// Everything inside public/ is the site. Everything outside it — this file,
+// package.json, serve.py, README.md, .git — is the plumbing, and because the
+// assets directory is public/ rather than the repo root, none of it can be
+// served by accident.
+//
+// A push to main makes Cloudflare run `npx wrangler deploy`, which reads this
+// file and uploads public/ as the new version of the live site.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "one-drop",
+  "compatibility_date": "2026-11-13",
+  "assets": {
+    "directory": "./public/"
+  }
+}

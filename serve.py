@@ -15,6 +15,11 @@ HTTPS = '--https' in sys.argv
 args = [a for a in sys.argv[1:] if not a.startswith('-')]
 PORT = int(args[0]) if args else (8443 if HTTPS else 8080)
 HERE = os.path.dirname(os.path.abspath(__file__))
+# The site lives in public/ (that is also what Cloudflare serves). Older
+# layouts kept it beside this file, so fall back to HERE if public/ is absent.
+SITE = os.path.join(HERE, 'public')
+if not os.path.isdir(SITE):
+    SITE = HERE
 
 class H(http.server.SimpleHTTPRequestHandler):
     extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
@@ -55,7 +60,7 @@ else:
     print('  (the microphone needs --https to work on the phone)')
 print('ctrl+c to stop')
 
-os.chdir(HERE)
+os.chdir(SITE)
 httpd = http.server.ThreadingHTTPServer(('', PORT), H)
 if HTTPS:
     crt, key = make_cert()
