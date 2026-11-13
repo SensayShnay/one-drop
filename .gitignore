@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# editors
+.vscode/
+.idea/
+*.swp
+
+# local certificates made by serve.py --https
+*.pem
+cert.pem
+key.pem
+
+# the uncompressed originals live outside the app, in Water Samples
+*.wav
+*.aif
+*.aiff

@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#04070c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>One Drop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #04070c; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; overscroll-behavior: none; }
+  body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #veil {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    pointer-events: none; transition: opacity 2.4s ease;
+    font-family: 'Cormorant Garamond', Georgia, serif; color: rgba(214, 226, 236, 0.72);
+  }
+  #veil.gone { opacity: 0; }
+  #veil h1 { font-weight: 300; font-style: italic; letter-spacing: 0.18em; font-size: clamp(22px, 4.5vw, 34px); margin: 0; }
+  #veil p { font-weight: 300; letter-spacing: 0.3em; font-size: 11px; text-transform: uppercase; opacity: 0.55; margin: 18px 0 0; }
+  #seq {
+    position: fixed; left: 50%; bottom: calc(4vh + 196px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    width: min(90vw, 580px); display: grid; grid-template-columns: 62px repeat(16, 1fr); gap: 4px;
+    opacity: 0; pointer-events: none; transition: opacity 1.6s ease;
+  }
+  /* the row's voice, named and kept named: tap the word to change it */
+  #seq .voice {
+    display: flex; align-items: center; justify-content: flex-start;
+    cursor: pointer; padding-right: 6px; overflow: visible;
+  }
+  #seq .voice i {
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 13px; letter-spacing: 0.07em; line-height: 1;
+    color: rgba(214, 228, 238, 0.82); white-space: nowrap;
+    background: none; border: none; border-radius: 0; width: auto; height: auto;
+    transition: color 0.3s ease;
+  }
+  #seq .voice:active i { color: rgba(236, 246, 252, 1); }
+  #seq .transport i {
+    width: 62%; height: 62%; border: none; border-radius: 0; box-shadow: none;
+    background: rgba(205, 232, 245, 0.62);
+    clip-path: polygon(14% 2%, 14% 98%, 96% 50%);        /* a play arrow */
+    transition: clip-path 0.25s ease, background 0.3s ease, transform 0.12s ease;
+  }
+  #seq .transport.running i {
+    background: rgba(205, 232, 245, 0.8);
+    clip-path: polygon(10% 10%, 90% 10%, 90% 90%, 10% 90%);   /* and a stop square */
+    filter: drop-shadow(0 0 7px rgba(160, 210, 230, 0.5));
+  }
+  #seq .transport.beat i { transform: scale(1.22); }
+  /* how to use it, said once and then left alone */
+  #seqhelp {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(4vh + 300px + env(safe-area-inset-bottom));   /* measured and set in js */
+    width: min(90vw, 580px); text-align: center;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic;
+    font-size: 12.5px; letter-spacing: 0.06em; line-height: 1.7;
+    color: rgba(206, 224, 236, 0.5); pointer-events: none;
+    opacity: 0; transition: opacity 1.8s ease;
+  }
+  #seqhelp.show { opacity: 1; }
+  #seq .bar {
+    grid-column: 2 / -1; align-self: center; height: 1px;
+    background: rgba(190, 215, 230, 0.14);
+  }
+  #params {
+    position: fixed; left: 50%; bottom: calc(4vh + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    width: min(84vw, 470px); opacity: 0; pointer-events: none; transition: opacity 1.6s ease;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+  }
+  /* the other areas get the same panel as the sequencer does */
+  #creekp, #deepp {
+    position: fixed; left: 50%; bottom: calc(4vh + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    width: min(84vw, 470px); opacity: 0; pointer-events: none; transition: opacity 1.6s ease;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+  }
+  #creekp .row, #deepp .row, #params .row { display: flex; align-items: center; gap: 13px; padding: 6px 0; touch-action: none; }
+  #creekp .row span, #deepp .row span, #params .row span {
+    width: 62px; text-align: right; font-size: 12.5px; letter-spacing: 0.14em; color: rgba(214, 226, 236, 0.55);
+  }
+  #creekp .track, #deepp .track, #params .track { position: relative; flex: 1; height: 22px; }
+  #creekp .track::before, #deepp .track::before, #params .track::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px;
+    background: rgba(190, 215, 230, 0.22);
+  }
+  #creekp .row u, #deepp .row u, #params .row u {
+    width: 54px; text-decoration: none; font-size: 12px; letter-spacing: 0.08em;
+    color: rgba(214, 226, 236, 0.7); font-style: normal; text-align: left;
+  }
+  #creekp .track b, #deepp .track b, #params .track b {
+    position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+    transform: translate(-50%, -50%); background: rgba(205, 230, 240, 0.8);
+    box-shadow: 0 0 8px rgba(160, 210, 230, 0.35);
+  }
+  /* a row you tap through rather than slide: the key, the scale */
+  #deepp .pick {
+    flex: 1; text-align: left; font-size: 13.5px; letter-spacing: 0.1em;
+    color: rgba(218, 232, 242, 0.88); cursor: pointer; padding: 4px 0;
+    border-bottom: 1px solid rgba(190, 215, 230, 0.16);
+  }
+  #deepp .pick:active { color: rgba(240, 248, 253, 1); }
+  #seq i {
+    display: block; aspect-ratio: 1; border-radius: 50%; margin: 6px auto; width: 44%;
+    background: rgba(190, 215, 230, 0.16); transition: background 0.25s, transform 0.25s, box-shadow 0.4s;
+  }
+  /* beads of water rather than dots: each one a slightly different shape, all slowly shifting */
+  #seq i.b0 { border-radius: 58% 42% 47% 53% / 51% 46% 54% 49%; }
+  #seq i.b1 { border-radius: 44% 56% 61% 39% / 57% 48% 52% 43%; }
+  #seq i.b2 { border-radius: 53% 47% 38% 62% / 44% 59% 41% 56%; }
+  #seq i.b3 { border-radius: 62% 38% 55% 45% / 48% 54% 46% 52%; }
+  #seq i.b4 { border-radius: 47% 53% 44% 56% / 60% 40% 58% 42%; }
+  #seq i.b5 { border-radius: 51% 49% 57% 43% / 42% 55% 45% 58%; }
+  #seq i.on { animation: bead 14s ease-in-out infinite; }
+  @keyframes bead {
+    0%, 100% { border-radius: 58% 42% 47% 53% / 51% 46% 54% 49%; }
+    25%      { border-radius: 45% 55% 60% 40% / 56% 49% 51% 44%; }
+    50%      { border-radius: 54% 46% 39% 61% / 43% 58% 42% 57%; }
+    75%      { border-radius: 61% 39% 54% 46% / 49% 53% 47% 51%; }
+  }
+  #seq i.on { background: rgba(205, 230, 240, 0.78); box-shadow: 0 0 10px rgba(160, 210, 230, 0.35); }
+  #seq i.head { transform: scale(1.35); }
+  #seq i.on.head { background: #eef8ff; box-shadow: 0 0 16px rgba(190, 230, 250, 0.7); }
+  #seq > span { display: block; padding: 8px 0; } /* bigger touch targets */
+  /* leaves for the rain to play */
+  #leaves { position: fixed; inset: 0; pointer-events: none; }
+  .leaf {
+    position: absolute; left: 0; top: 0; display: grid; place-items: center;
+    pointer-events: none; transition: opacity 0.8s ease;
+  }
+  .leaf i {
+    display: block; position: relative; width: 100%; height: 100%;
+    border-radius: var(--shape, 4% 68% 8% 72%);
+    background: linear-gradient(var(--lean, 140deg), rgba(var(--green, 78, 126, 104), 0.55), rgba(22, 54, 58, 0.62));
+    border: 1px solid rgba(154, 212, 192, 0.4);
+    transform: rotate(var(--tilt, 0deg));
+    transition: transform 0.35s ease, box-shadow 0.45s ease, border-color 0.45s ease;
+  }
+  /* the vein, drawn the way that species runs */
+  .leaf i::after {
+    content: ''; position: absolute; pointer-events: none;
+  }
+  .sp-mid i::after {
+    left: 50%; top: 8%; width: 0; height: 84%;
+    border-left: 1px solid rgba(206, 238, 222, 0.3);
+    transform: translateX(-50%) rotate(var(--veer, 0deg)); transform-origin: 50% 0;
+  }
+  .sp-rays i::after {
+    left: 14%; top: 14%; width: 72%; height: 72%; border-radius: 50%;
+    border-top: 1px solid rgba(206, 238, 222, 0.22);
+    border-right: 1px solid rgba(206, 238, 222, 0.14);
+    transform: rotate(calc(32deg + var(--veer, 0deg)));
+  }
+  .leaf.struck i {
+    transform: rotate(var(--tilt, 0deg)) scale(1.14);
+    border-color: rgba(226, 250, 240, 0.9);
+    box-shadow: 0 0 22px rgba(160, 230, 210, 0.6);
+  }
+  .leaf.going { opacity: 0 !important; }
+  .leaf.going i { transform: rotate(var(--tilt, 0deg)) scale(0.3); }
+
+  /* letting the stones or the leaves go */
+  /* when an area has a panel of its own, the clear word steps above it */
+  body.haspanel #clear { bottom: calc(4vh + 116px + env(safe-area-inset-bottom)); }
+  #clear {
+    position: fixed; left: 50%; bottom: calc(7vh + env(safe-area-inset-bottom));
+    transform: translateX(-50%); opacity: 0; pointer-events: none; cursor: pointer;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 15px; letter-spacing: 0.22em; color: rgba(214, 226, 236, 0.55);
+    padding: 10px 18px; transition: opacity 0.7s ease, color 0.3s ease; white-space: nowrap;
+  }
+  #clear:active { color: rgba(234, 246, 252, 0.95); }
+
+  /* the instruments, marked on the chart */
+  #map .inst { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; padding: 6px 10px; }
+  #map .inst svg { width: 30px; height: 30px; display: block; margin: 0 auto; }
+  #map .inst svg * { fill: none; stroke: rgba(214, 240, 250, 0.72); stroke-width: 1.2; stroke-linecap: round; }
+  #map .inst svg .fill { fill: rgba(214, 240, 250, 0.72); stroke: none; }
+  #map .inst b {
+    display: block; margin-top: 5px; text-align: center; white-space: nowrap;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 12px; letter-spacing: 0.18em; color: rgba(214, 226, 236, 0.62);
+  }
+  #map .inst:active svg * { stroke: rgba(240, 252, 255, 1); }
+
+  /* the ring of light left by a finger going round */
+  /* the bowl: brass at rest, glowing warm as it sings */
+  /* the five bowls, standing in the cove */
+  #bowls { position: fixed; inset: 0; pointer-events: none; }
+  .bowl {
+    position: absolute; left: 0; top: 0; display: none; place-items: center;
+    border-radius: 50%; box-sizing: border-box;
+    border: 1px solid rgba(232, 196, 136, calc(0.3 + var(--lit, 0) * 0.62));
+    background: radial-gradient(circle,
+      rgba(226, 178, 104, calc(0.012 + var(--lit, 0) * 0.075)) 0%,
+      rgba(198, 150, 92, calc(0.008 + var(--lit, 0) * 0.045)) 64%,
+      rgba(150, 112, 70, calc(0.02 + var(--lit, 0) * 0.05)) 93%,
+      transparent 100%);
+    box-shadow:
+      0 0 calc(10px + var(--lit, 0) * 52px) rgba(228, 178, 104, calc(0.1 + var(--lit, 0) * 0.42)),
+      inset 0 0 calc(14px + var(--lit, 0) * 44px) rgba(214, 164, 96, calc(0.05 + var(--lit, 0) * 0.2));
+    transition: opacity 0.6s ease;
+  }
+  .bowl b {                           /* the note it rings */
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic;
+    font-weight: 300; font-size: clamp(13px, 2.6vh, 22px); letter-spacing: 0.08em;
+    color: rgba(244, 214, 164, calc(0.22 + var(--lit, 0) * 0.68));
+    text-shadow: 0 0 calc(6px + var(--lit, 0) * 16px) rgba(228, 178, 104, 0.5);
+  }
+  .bowl i {                           /* the rim itself catching the light */
+    position: absolute; inset: -1px; border-radius: 50%;
+    border: 1px solid rgba(248, 222, 176, calc(var(--lit, 0) * 0.5));
+  }
+  /* the instruments, marked on the chart */
+  #map .inst { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; padding: 6px 10px; }
+  #map .inst svg { width: 30px; height: 30px; display: block; margin: 0 auto; }
+  #map .inst svg * { fill: none; stroke: rgba(214, 240, 250, 0.72); stroke-width: 1.2; stroke-linecap: round; }
+  #map .inst svg .fill { fill: rgba(214, 240, 250, 0.72); stroke: none; }
+  #map .inst b {
+    display: block; margin-top: 5px; text-align: center; white-space: nowrap;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 12px; letter-spacing: 0.18em; color: rgba(214, 226, 236, 0.62);
+  }
+  #map .inst:active svg * { stroke: rgba(240, 252, 255, 1); }
+
+  /* the ring of light left by a finger going round */
+  /* the bowl: brass at rest, glowing warm as it sings */
+  #bowl {
+    position: fixed; left: 0; top: 0; width: 0; height: 0; border-radius: 50%;
+    pointer-events: none; opacity: 0;
+    border: 1px solid rgba(232, 196, 136, calc(0.32 + var(--lit, 0) * 0.6));
+    background: radial-gradient(circle,
+      rgba(226, 178, 104, calc(0.015 + var(--lit, 0) * 0.07)) 0%,
+      rgba(198, 150, 92, calc(0.01 + var(--lit, 0) * 0.04)) 62%,
+      transparent 74%);
+    box-shadow:
+      0 0 calc(22px + var(--lit, 0) * 60px) rgba(228, 178, 104, calc(0.14 + var(--lit, 0) * 0.4)),
+      inset 0 0 calc(30px + var(--lit, 0) * 50px) rgba(214, 164, 96, calc(0.08 + var(--lit, 0) * 0.22));
+    transition: opacity 0.5s ease;
+  }
+  #bowl b {                           /* which of the five you have your hand on */
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic;
+    font-weight: 300; font-size: 26px; letter-spacing: 0.08em;
+    color: rgba(244, 214, 164, calc(0.3 + var(--lit, 0) * 0.65));
+    text-shadow: 0 0 calc(8px + var(--lit, 0) * 18px) rgba(228, 178, 104, 0.5);
+  }
+  #bowl::after {                      /* the rim catches the light */
+    content: ''; position: absolute; inset: 7%; border-radius: 50%;
+    border: 1px solid rgba(240, 212, 160, calc(0.08 + var(--lit, 0) * 0.3));
+  }
+
+  /* stones on the bed of the pool */
+  #stones { position: fixed; inset: 0; pointer-events: none; }
+  .stone {
+    position: absolute; left: 0; top: 0; width: 40px; height: 40px;
+    display: grid; place-items: center; pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  .stone i {
+    display: block; width: 15px; height: 15px; border-radius: 54% 46% 49% 51% / 48% 52% 47% 53%;
+    background: rgba(12, 24, 34, 0.75);
+    border: 1px solid rgba(170, 212, 234, 0.42);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+    transition: transform 0.35s ease, box-shadow 0.45s ease, border-color 0.45s ease;
+  }
+  .stone.ringing i {
+    transform: scale(1.55);
+    border-color: rgba(226, 246, 255, 0.95);
+    box-shadow: 0 0 20px rgba(165, 220, 245, 0.75), inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .stone.going { opacity: 0 !important; }
+  .stone.going i { transform: scale(0.4); }
+
+  /* pins: lights left on the water */
+  #pins { position: fixed; inset: 0; pointer-events: none; }
+  .pin {
+    position: absolute; left: 0; top: 0; width: 54px; height: 54px;
+    display: grid; place-items: center; pointer-events: auto; cursor: pointer;
+    transition: opacity 0.8s ease;
+  }
+  .pin i {
+    display: block; width: 13px; height: 13px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 36%, rgba(226, 244, 252, 0.95), rgba(140, 200, 225, 0.5) 55%, transparent 72%);
+    box-shadow: 0 0 18px rgba(150, 210, 235, 0.65);
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+    animation: bob 6s ease-in-out infinite;
+  }
+  .pin.close i { transform: scale(1.4); box-shadow: 0 0 26px rgba(170, 225, 245, 0.7); }
+  .pin.far { pointer-events: none; }
+  .pin.far i { width: 6px; height: 6px; box-shadow: 0 0 8px rgba(150, 210, 235, 0.4); animation: none; }
+  .pin.far.warm i { width: 11px; height: 11px; box-shadow: 0 0 18px rgba(170, 225, 245, 0.6); animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+  .pin.holding i { transform: scale(0.75); }
+  .pin.dissolving { opacity: 0 !important; transition: opacity 0.45s ease; }
+  .pin em {
+    position: absolute; top: 38px; white-space: nowrap; opacity: 0;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 13px; letter-spacing: 0.18em; color: rgba(214, 226, 236, 0.8);
+    transition: opacity 0.7s ease;
+  }
+  .pin.close em { opacity: 0.85; }
+  @keyframes bob { 0%, 100% { translate: 0 -2px; } 50% { translate: 0 2px; } }
+
+  /* holding a finger on the water to leave a sound */
+  #rec {
+    position: fixed; left: 0; top: 0; width: 180px; height: 180px; margin: -90px 0 0 -90px;
+    pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+  }
+  #rec svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  #rec circle { fill: none; stroke: rgba(205, 232, 245, 0.75); stroke-width: 1.2; }
+  #rec .bg { stroke: rgba(190, 215, 230, 0.18); }
+  #rec em {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 14px; letter-spacing: 0.22em; color: rgba(214, 226, 236, 0.8);
+  }
+  /* the upload target that appears while the water is listening */
+  #rec b.up {
+    position: absolute; left: 50%; top: -4px; transform: translate(-50%, -100%);
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 12px; letter-spacing: 0.2em; white-space: nowrap;
+    color: rgba(214, 226, 236, 0.4); transition: color 0.3s, letter-spacing 0.3s;
+  }
+  #rec.armed b.up { color: rgba(226, 244, 252, 0.95); letter-spacing: 0.3em; }
+  #rec.armed circle.arc { stroke: rgba(205, 232, 245, 0.2); }
+  #rec.armed em { opacity: 0.3; }
+
+  /* the chart */
+  #maptoggle, #mute, #ambient, #capture {
+    position: fixed; top: max(16px, env(safe-area-inset-top));
+    width: 46px; height: 46px; opacity: 0; pointer-events: none; cursor: pointer;
+    transition: opacity 1.2s ease;
+    z-index: 30;              /* a compass word must never swallow a ring's touch */
+  }
+  #maptoggle { right: 16px; }
+  #mute { right: 70px; }
+  #ambient { right: 124px; }
+  #capture { right: 178px; }
+  #maptoggle svg, #mute svg, #ambient svg, #capture svg { width: 100%; height: 100%; }
+  #maptoggle circle, #maptoggle path, #mute circle, #mute path, #ambient circle, #ambient path,
+  #capture circle, #capture path {
+    fill: none; stroke: rgba(205, 232, 245, 0.5); stroke-width: 1.1; stroke-linecap: round;
+  }
+  #maptoggle circle.me { fill: rgba(205, 232, 245, 0.5); stroke: none; }
+  #maptoggle.open circle, #maptoggle.open path { stroke: rgba(226, 244, 252, 0.95); }
+  /* the mute reads as water: moving when it is on, flat when it is off */
+  #mute .flat { opacity: 0; transition: opacity 0.35s ease; }
+  #mute .wave { opacity: 1; transition: opacity 0.35s ease; }
+  #mute.off .wave { opacity: 0; }
+  #mute.off .flat { opacity: 1; }
+  #mute.off circle { stroke: rgba(205, 232, 245, 0.28); }
+  #mute.off path { stroke: rgba(205, 232, 245, 0.42); }
+  /* the ambient water: layered ripples that go still when it is set aside */
+  #ambient .still { opacity: 0; transition: opacity 0.35s ease; }
+  #ambient .moving { opacity: 1; transition: opacity 0.35s ease; }
+  #ambient.off .moving { opacity: 0; }
+  #ambient.off .still { opacity: 1; }
+  #ambient.off circle { stroke: rgba(205, 232, 245, 0.28); }
+  #ambient.off path { stroke: rgba(205, 232, 245, 0.42); }
+  #map {
+    position: fixed; inset: 0; opacity: 0; pointer-events: none;
+    transition: opacity 0.7s ease; background: rgba(3, 7, 12, 0.72);
+    -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+  }
+  #map.open { opacity: 1; pointer-events: auto; }
+  #map .plate { position: absolute; inset: 0; }
+  #map .area {
+    position: absolute; border-radius: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(70, 130, 160, 0.20), rgba(40, 90, 120, 0.06) 62%, transparent 72%);
+    border: 1px solid rgba(150, 200, 225, 0.12);
+  }
+  #map .lab {
+    position: absolute; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 14px; letter-spacing: 0.22em; color: rgba(214, 226, 236, 0.72);
+  }
+  #map .mp {
+    position: absolute; width: 9px; height: 9px; border-radius: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 40% 36%, rgba(226, 244, 252, 0.95), rgba(140, 200, 225, 0.5) 60%, transparent 72%);
+    box-shadow: 0 0 12px rgba(150, 210, 235, 0.6);
+  }
+  #map .mp.lab2 { width: auto; height: auto; }
+  #map .me {
+    position: absolute; width: 26px; height: 26px; border-radius: 50%; transform: translate(-50%, -50%);
+    border: 1px solid rgba(226, 244, 252, 0.85); pointer-events: none;
+    animation: mepulse 3.4s ease-in-out infinite;
+  }
+  #map .me::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+    border-radius: 50%; background: rgba(226, 244, 252, 0.95);
+  }
+  @keyframes mepulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; } 50% { transform: translate(-50%, -50%) scale(1.25); opacity: 0.55; } }
+  #map .hint {
+    position: absolute; left: 50%; bottom: calc(7vh + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300; pointer-events: none;
+    font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase; white-space: nowrap;
+    color: rgba(214, 226, 236, 0.38);
+  }
+  /* everything you have left on the water, gathered in one place */
+  #shelf {
+    position: fixed; inset: 0; z-index: 40; display: none;
+    background: rgba(5, 9, 13, 0.93); backdrop-filter: blur(7px);
+    font-family: 'Cormorant Garamond', Georgia, serif; color: rgba(214, 226, 236, 0.86);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #shelf.open { display: block; }
+  #shelf .inner { max-width: 620px; margin: 0 auto; padding: calc(5vh + env(safe-area-inset-top)) 20px 60px; }
+  #shelf h2 {
+    font-weight: 300; font-style: italic; font-size: 21px; letter-spacing: 0.1em;
+    margin: 0 0 4px; color: rgba(222, 234, 242, 0.9);
+  }
+  #shelf .sub { font-size: 12px; letter-spacing: 0.14em; opacity: 0.45; margin-bottom: 20px; }
+  #shelf .sorts { display: flex; gap: 16px; margin-bottom: 14px; font-size: 12px; letter-spacing: 0.13em; }
+  #shelf .sorts span { opacity: 0.4; cursor: pointer; padding: 3px 0; border-bottom: 1px solid transparent; }
+  #shelf .sorts span.on { opacity: 0.88; border-bottom-color: rgba(190, 215, 230, 0.5); }
+  #shelf .item {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center;
+    padding: 13px 2px; border-top: 1px solid rgba(160, 190, 210, 0.11);
+  }
+  #shelf .item.playing .nm { color: rgba(226, 242, 250, 1); }
+  #shelf .nm { font-size: 16px; font-style: italic; letter-spacing: 0.03em; }
+  #shelf .nm[contenteditable]:focus { outline: none; border-bottom: 1px solid rgba(190, 215, 230, 0.45); }
+  #shelf .meta { grid-column: 1; font-size: 11px; letter-spacing: 0.12em; opacity: 0.4; }
+  #shelf .acts { grid-column: 2; grid-row: 1 / 3; display: flex; gap: 7px; }
+  #shelf .acts b {
+    width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid rgba(180, 206, 224, 0.3); font-size: 12px; font-weight: 400;
+    font-style: normal; cursor: pointer; opacity: 0.72; user-select: none;
+  }
+  #shelf .acts b.gone { opacity: 0.2; pointer-events: none; }
+  #shelf .acts b.rm { border-color: rgba(224, 150, 150, 0.32); }
+  #shelf .empty { opacity: 0.4; font-style: italic; font-size: 15px; padding: 22px 2px; }
+  #shelf .close {
+    position: fixed; top: calc(2vh + env(safe-area-inset-top)); right: 16px;
+    width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid rgba(180, 206, 224, 0.3); cursor: pointer; opacity: 0.7;
+  }
+  /* The chart's menu. It used to sit at the bottom, over the water it was meant
+     to be describing; up here the top of the chart is empty anyway. */
+  #chartlinks {
+    position: absolute; transform: none;
+    left: 20px; top: calc(2vh + 62px + env(safe-area-inset-top)); right: auto; bottom: auto;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 9px;
+    pointer-events: auto; z-index: 6;
+  }
+  #chartlinks b {
+    font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 400; font-style: italic;
+    font-size: 14.5px; letter-spacing: 0.07em; color: rgba(206, 226, 240, 0.8);
+    padding: 7px 16px; border: 1px solid rgba(170, 202, 222, 0.26); border-radius: 18px;
+    cursor: pointer; white-space: nowrap; background: rgba(8, 14, 20, 0.56);
+    backdrop-filter: blur(4px);
+  }
+  #chartlinks b:active { color: rgba(226, 240, 250, 1); border-color: rgba(190, 220, 238, 0.6); }
+  /* the naming of water: what each kind of water actually is */
+  #names {
+    position: fixed; inset: 0; z-index: 40; display: none;
+    background: rgba(5, 9, 13, 0.94); backdrop-filter: blur(7px);
+    font-family: 'Cormorant Garamond', Georgia, serif; color: rgba(214, 226, 236, 0.86);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #names.open { display: block; }
+  #names .inner { max-width: 620px; margin: 0 auto; padding: calc(5vh + env(safe-area-inset-top)) 20px 70px; }
+  #names h2 { font-weight: 300; font-style: italic; font-size: 21px; letter-spacing: 0.1em; margin: 0 0 4px; }
+  #names .sub { font-size: 12px; letter-spacing: 0.14em; opacity: 0.45; margin-bottom: 26px; }
+  #names .group {
+    font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.38;
+    margin: 30px 0 10px; padding-bottom: 7px; border-bottom: 1px solid rgba(160, 190, 210, 0.13);
+  }
+  #names .kind { padding: 11px 2px; }
+  #names .kind.here { cursor: pointer; }
+  #names .knm {
+    font-size: 16px; font-style: italic; letter-spacing: 0.04em;
+    color: rgba(226, 238, 246, 0.92);
+  }
+  #names .kind.here .knm { color: rgba(186, 222, 240, 0.96); }
+  #names .kgo {
+    font-style: normal; font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    opacity: 0.45; margin-left: 10px; vertical-align: 1px;
+  }
+  #names .kdef { font-size: 14px; line-height: 1.65; opacity: 0.62; margin-top: 3px; }
+  #names .fact { padding: 13px 2px; }
+  #names .ftitle { font-size: 15.5px; font-style: italic; color: rgba(222, 236, 244, 0.9); }
+  #names .fsrc {
+    display: inline-block; margin-top: 6px; font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: rgba(170, 202, 222, 0.55); text-decoration: none;
+    border-bottom: 1px solid rgba(170, 202, 222, 0.25);
+  }
+  #names .close {
+    position: fixed; top: calc(2vh + env(safe-area-inset-top)); right: 16px;
+    width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid rgba(180, 206, 224, 0.3); cursor: pointer; opacity: 0.7;
+    background: rgba(5, 9, 13, 0.8);
+  }
+  /* the name of the water you have just arrived in */
+  #arrived {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    top: calc(12vh + env(safe-area-inset-top));
+    width: fit-content; max-width: min(86vw, 460px); text-align: center;
+    font-family: 'Cormorant Garamond', Georgia, serif; pointer-events: none;
+    color: rgba(228, 240, 248, 0.95);
+    padding: 15px 22px; border-radius: 20px;
+    background: rgba(8, 14, 20, 0.66); backdrop-filter: blur(6px);
+    border: 1px solid rgba(170, 202, 222, 0.16);
+    opacity: 0; transition: opacity 2s ease; z-index: 12;
+  }
+  #arrived.show { opacity: 1; }
+  #arrived em { display: block; font-size: 19px; letter-spacing: 0.14em; opacity: 0.95; margin-bottom: 7px; }
+  #arrived span { font-size: 13.5px; line-height: 1.7; opacity: 0.68; }
+  /* while the chart is up, the water's own marks step back */
+  body.charting #compass span, body.charting #pins, body.charting #seq, body.charting #params {
+    opacity: 0 !important; pointer-events: none !important; transition: opacity 0.4s ease;
+  }
+  /* a hint, and the glow around a voice in the cave */
+  #hint {
+    position: fixed; left: 50%; bottom: calc(7vh + env(safe-area-inset-bottom));
+    transform: translateX(-50%); opacity: 0; pointer-events: none; white-space: nowrap;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 15px; letter-spacing: 0.22em; color: rgba(214, 226, 236, 0.45);
+    transition: opacity 0.9s ease;
+  }
+  #rec.cave b.up { display: none; }
+  #rec.cave circle.arc { stroke: rgba(226, 214, 196, 0.6); }
+  #voice {
+    position: fixed; left: 0; top: 0; width: 0; height: 0; border-radius: 50%;
+    pointer-events: none; opacity: 0; transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(236, 226, 206, 0.16), transparent 68%);
+    box-shadow: 0 0 60px rgba(226, 214, 196, 0.22);
+  }
+  #naming {
+    position: fixed; left: 50%; bottom: 32%; transform: translateX(-50%);
+    opacity: 0; pointer-events: none; transition: opacity 0.6s ease; text-align: center;
+  }
+  #naming input {
+    width: min(72vw, 340px); background: transparent; border: none;
+    border-bottom: 1px solid rgba(190, 215, 230, 0.35); outline: none; text-align: center;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 19px; letter-spacing: 0.1em; color: rgba(226, 238, 246, 0.95); padding: 8px 4px;
+  }
+  #naming input::placeholder { color: rgba(214, 226, 236, 0.3); }
+  #naming p {
+    margin: 12px 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(214, 226, 236, 0.4);
+  }
+  /* the ice: the cracks you open in it, and the holes you melt */
+  /* an svg will not stretch to inset:0 the way a div does; it needs the size saying */
+  #cracks {
+    position: fixed; inset: 0; width: 100%; height: 100%; overflow: visible;
+    pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
+  }
+  /* a fracture is dark, because you are seeing down into the sheet; the frost
+     that forms along its edge is the pale part */
+  .crack {
+    fill: none; stroke: rgba(22, 44, 62, 0.9); stroke-width: 1;
+    stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 2.5px rgba(232, 246, 255, 0.85));
+  }
+  #holes { position: fixed; inset: 0; pointer-events: none; }
+  /* the creek: rocks the water breaks over, and the surge coming down to them */
+  #rocks { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; }
+  .rock {
+    position: absolute; left: 0; top: 0; display: none;
+    background: radial-gradient(ellipse at 38% 26%,
+      rgba(78, 82, 84, 0.99), rgba(40, 44, 47, 1) 52%, rgba(16, 19, 22, 1));
+    box-shadow: inset 0 -3px 7px rgba(0, 0, 0, 0.65), inset 0 2px 4px rgba(168, 186, 196, 0.16),
+                0 2px 9px rgba(0, 0, 0, 0.5),
+                0 0 calc(2px + var(--lit, 0) * 22px) rgba(188, 226, 240, calc(0.04 + var(--lit, 0) * 0.5));
+    transition: opacity 0.6s ease;
+  }
+  .rock i {                           /* the water piling up on its upstream side */
+    position: absolute; left: -12%; top: -34%; width: 124%; height: 48%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(226, 244, 252, calc(0.07 + var(--lit, 0) * 0.45)), rgba(226, 244, 252, 0) 68%);
+  }
+  .rock.going { opacity: 0; }
+  #surge {
+    position: fixed; inset: 0; width: 100%; height: 100%; overflow: visible;
+    pointer-events: none; opacity: 0;
+  }
+  .crest-body { fill: url(#crestfade); opacity: 0.38; stroke: none; }
+  .crest-edge {
+    fill: none; stroke: url(#crestfade); stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 5px rgba(170, 216, 238, 0.55));
+  }
+  .crest-chop {
+    fill: none; stroke: url(#crestfade); stroke-width: 0.9; opacity: 0.7;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  /* a drip running along a crack from one hole to the next */
+  .spark {
+    position: absolute; left: 0; top: 0; width: 7px; height: 7px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(226, 246, 255, 0.95), rgba(150, 206, 236, 0) 70%);
+    box-shadow: 0 0 10px rgba(176, 222, 248, 0.8);
+  }
+  .hole {
+    position: absolute; left: 0; top: 0; border-radius: 52% 48% 45% 55% / 48% 52% 48% 52%;
+    background: radial-gradient(circle at 42% 38%, rgba(16, 38, 52, 0.95), rgba(8, 22, 32, 0.98) 70%);
+    box-shadow: 0 0 0 1px rgba(196, 228, 244, 0.5), 0 0 18px rgba(150, 206, 236, 0.3),
+                inset 0 2px 10px rgba(0, 0, 0, 0.7);
+  }
+
+  /* the single drop that waits in the cove */
+  /* hidden until the water is woken; after that the cycle places it itself */
+  #onedrop {
+    position: absolute; left: 0; top: 0; width: 46px; height: 46px;
+    display: none; place-items: center; pointer-events: auto; cursor: pointer;
+    transition: opacity 0.9s ease;
+  }
+  #onedrop i {
+    display: block; width: 14px; height: 14px;
+    border-radius: 52% 48% 44% 56% / 38% 42% 58% 62%;
+    background: radial-gradient(circle at 38% 32%, rgba(246, 250, 252, 0.98), rgba(168, 216, 238, 0.6) 56%, transparent 74%);
+    box-shadow: 0 0 20px rgba(176, 222, 244, 0.7);
+    animation: swell 4.2s ease-in-out infinite;
+  }
+  #onedrop.gone { opacity: 0; pointer-events: none; }
+  @keyframes swell { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22); } }
+  #onedrop em {
+    position: absolute; top: 34px; white-space: nowrap; opacity: 0.75;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 12px; letter-spacing: 0.2em; color: rgba(214, 226, 236, 0.8);
+  }
+  /* while the cycle runs, the water's own marks step back */
+  body.cycling #compass span, body.cycling #pins, body.cycling #seq, body.cycling #params,
+  body.cycling #rocks, body.cycling #surge,
+  body.cycling #stones, body.cycling #leaves, body.cycling #things, body.cycling #bowls,
+  body.cycling #cracks, body.cycling #holes,
+  body.cycling #clear, body.cycling #hint {
+    opacity: 0 !important; pointer-events: none !important; transition: opacity 1.2s ease;
+  }
+  /* the way out of the cycle, said plainly enough to find */
+  #leave {
+    position: fixed; left: 50%; bottom: calc(6vh + env(safe-area-inset-bottom));
+    transform: translateX(-50%); opacity: 0; pointer-events: none; cursor: pointer;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 14px; letter-spacing: 0.14em; color: rgba(222, 236, 246, 0.85);
+    padding: 9px 20px; border: 1px solid rgba(180, 206, 224, 0.34); border-radius: 18px;
+    background: rgba(8, 14, 20, 0.5); transition: opacity 1s ease, color 0.3s ease;
+  }
+  #leave:active { color: rgba(240, 250, 255, 1); border-color: rgba(200, 226, 240, 0.6); }
+  /* a drawing of what is happening to the water, above the line */
+  #cyclefig {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(22vh + 150px + env(safe-area-inset-bottom));   /* measured and set in js */
+    width: 214px; height: 143px; pointer-events: none;
+    opacity: 0; transition: opacity 1.6s ease; z-index: 11;
+  }
+  #cyclefig svg {
+    width: 100%; height: 100%; fill: none;
+    stroke: rgba(214, 234, 246, 0.72); stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  body.cycling #leave { opacity: 1; pointer-events: auto; }
+  /* stepping through the cycle by hand */
+  #cyclestep {
+    position: fixed; left: 50%; bottom: calc(6vh + env(safe-area-inset-bottom));
+    transform: translateX(-50%); width: min(86vw, 430px);
+    display: none; justify-content: space-between; align-items: center;
+    pointer-events: none; z-index: 13;
+  }
+  body.cycling #cyclestep { display: flex; }
+  #cyclestep b {
+    width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid rgba(180, 206, 224, 0.3); background: rgba(8, 14, 20, 0.5);
+    color: rgba(222, 236, 246, 0.85); font-weight: 400; font-size: 17px;
+    cursor: pointer; pointer-events: auto; user-select: none;
+  }
+  #cyclestep b:active { color: rgba(245, 252, 255, 1); border-color: rgba(200, 226, 240, 0.6); }
+  #cyclestep b.off { opacity: 0.22; pointer-events: none; }
+
+  /* a word under whichever ring you are touching */
+  #tip {
+    position: fixed; z-index: 31; top: calc(max(16px, env(safe-area-inset-top)) + 52px);
+    transform: translateX(-50%); opacity: 0; pointer-events: none; white-space: nowrap;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 13px; letter-spacing: 0.18em; color: rgba(214, 226, 236, 0.8);
+    transition: opacity 0.35s ease;
+  }
+
+  /* things that do not belong in the water */
+  #things { position: fixed; inset: 0; pointer-events: none; }
+  .thing {
+    position: absolute; left: 0; top: 0; display: grid; place-items: center;
+    pointer-events: auto; cursor: pointer;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    animation: adrift 7s ease-in-out infinite;
+  }
+  @keyframes adrift {
+    0%, 100% { translate: 0 -3px; } 50% { translate: 0 3px; }
+  }
+  .thing.lifting { opacity: 0; transform: translate(var(--tx, 0), -70px) scale(0.6) !important; }
+  .thing i { display: block; width: 100%; height: 100%; transform: rotate(var(--spin, 0deg)); }
+  /* a torn scrap, dull and a little too pale for water */
+  .thing.plastic i {
+    clip-path: var(--torn, polygon(8% 34%, 32% 6%, 60% 16%, 92% 38%, 80% 74%, 46% 96%, 16% 70%));
+    background: linear-gradient(130deg, rgba(226, 230, 232, 0.5), rgba(160, 170, 176, 0.28));
+    box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.12);
+  }
+  /* an oily sheen: the one thing here with colour in it */
+  .thing.sheen i {
+    border-radius: 50% 42% 56% 38% / 44% 56% 40% 58%;
+    background: conic-gradient(from 20deg, rgba(150,110,190,0.34), rgba(90,170,180,0.3),
+      rgba(190,160,90,0.32), rgba(170,90,140,0.3), rgba(150,110,190,0.34));
+    filter: blur(0.4px);
+  }
+  .thing.foam { place-items: stretch; }
+  .thing.foam i {
+    position: absolute; width: 62%; height: 62%; left: 0; top: 10%;
+    border-radius: 50%; background: rgba(196, 206, 178, 0.34);
+    border: 1px solid rgba(214, 224, 192, 0.3);
+  }
+  .thing.foam i.b { left: 40%; top: 36%; width: 56%; height: 56%; }
+  .thing.foam i.c { left: 16%; top: 48%; width: 44%; height: 44%; }
+  .thing.line svg { width: 100%; height: 100%; }
+  .thing.line path { fill: none; stroke: rgba(226, 230, 232, 0.5); stroke-width: 1.4; stroke-linecap: round; }
+  .thing.can i {
+    width: 46%; height: 84%; margin: 0 auto; border-radius: 18% / 11%;
+    background: linear-gradient(96deg,
+      rgba(132, 140, 144, 0.34) 0%, rgba(206, 212, 216, 0.5) 28%,
+      rgba(118, 126, 130, 0.36) 56%, rgba(188, 194, 198, 0.44) 100%);
+    border: 1px solid rgba(212, 218, 222, 0.42);
+    box-shadow: inset 0 6px 6px -6px rgba(240,244,246,0.5), inset 0 -6px 6px -6px rgba(0,0,0,0.4);
+  }
+  /* the line a lifted thing leaves behind */
+  #said {
+    position: fixed; left: 50%; bottom: calc(22vh + env(safe-area-inset-bottom));
+    transform: translateX(-50%); width: fit-content; max-width: min(78vw, 440px); text-align: center;
+    opacity: 0; pointer-events: none; transition: opacity 1.2s ease;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 17px; line-height: 1.55; letter-spacing: 0.06em;
+    color: rgba(232, 242, 249, 0.97);
+    padding: 15px 22px; border-radius: 20px;
+    background: rgba(8, 14, 20, 0.68); backdrop-filter: blur(6px);
+    border: 1px solid rgba(170, 202, 222, 0.16);
+  }
+  /* how much you have taken out of the water, kept on screen */
+  #taken {
+    position: fixed; left: 16px; top: calc(2vh + env(safe-area-inset-top));
+    display: none; grid-template-columns: auto auto; align-items: center;
+    gap: 3px 7px; justify-items: start; z-index: 30;
+    font-family: 'Cormorant Garamond', Georgia, serif; pointer-events: auto; cursor: default;
+    opacity: 0.42; transition: opacity 0.9s ease;
+  }
+  #taken.on { display: grid; }
+  #taken.lit { opacity: 1; }
+  #taken svg { width: 19px; height: 19px; fill: none; stroke: rgba(196, 224, 240, 0.85); stroke-width: 1.3; }
+  #taken b { font-weight: 400; font-style: italic; font-size: 16px; color: rgba(214, 232, 244, 0.92); }
+  #taken u {
+    text-decoration: none; font-size: 10px; letter-spacing: 0.17em; text-transform: uppercase;
+    color: rgba(196, 218, 232, 0.6); opacity: 0; transition: opacity 0.4s ease; white-space: nowrap;
+    grid-column: 1 / 3;
+  }
+  #taken.lit u { opacity: 1; }
+
+  /* keeping a ripple */
+  #capture .dot { fill: rgba(226, 164, 150, 0.75); stroke: none; transition: fill 0.3s ease; }
+  #capture .arc { stroke: rgba(226, 164, 150, 0.9); stroke-dasharray: 50.3; stroke-dashoffset: 50.3; }
+  #capture.rolling .dot { fill: rgba(240, 140, 120, 0.95); animation: beat 1.6s ease-in-out infinite; }
+  #capture.ready .dot { fill: rgba(206, 236, 250, 0.95); }
+  @keyframes beat { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  #keep {
+    position: fixed; left: 50%; bottom: calc(13vh + env(safe-area-inset-bottom));
+    transform: translateX(-50%); opacity: 0; pointer-events: none; cursor: pointer;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 15px; letter-spacing: 0.2em; white-space: nowrap;
+    color: rgba(226, 238, 248, 0.85); padding: 12px 20px;
+    border: 1px solid rgba(206, 236, 250, 0.28); border-radius: 40px;
+    transition: opacity 0.6s ease, border-color 0.3s ease;
+  }
+  #keep:active { border-color: rgba(226, 244, 252, 0.8); }
+  #compass span {
+    position: fixed; transform: translate(-50%, -50%); pointer-events: none; opacity: 0;
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 15px; letter-spacing: 0.22em; color: rgba(214, 226, 236, 0.9); transition: opacity 0.6s;
+    white-space: nowrap;
+  }
+  #err { position: fixed; inset: 0; display: none; place-items: center; color: #9fb3c4; font: 15px/1.5 system-ui; padding: 32px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="veil"><div><h1>one drop</h1><p>touch the water</p></div></div>
+<svg id="surge"></svg>
+<div id="rocks"></div>
+<svg id="cracks"></svg>
+<div id="holes"></div>
+<div id="things"></div>
+<div id="drop-layer" style="position:fixed;inset:0;pointer-events:none"><div id="onedrop"><i></i><em>the cycle</em></div></div>
+<div id="leaves"></div>
+<div id="bowls"></div>
+<div id="clear"></div>
+<div id="hint"></div>
+<div id="voice"></div>
+<div id="keep"></div>
+<div id="said"></div>
+<div id="tip"></div>
+<div id="cyclefig"></div>
+<div id="cyclestep"><b class="back">&lsaquo;</b><b class="fwd">&rsaquo;</b></div>
+<div id="leave">let it go</div>
+<div id="stones"></div>
+<div id="pins"></div>
+<div id="rec"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="40"/><circle class="arc" cx="50" cy="50" r="40" stroke-dasharray="251.3" stroke-dashoffset="251.3"/></svg><em>listening</em><b class="up">slide up to add a file</b></div>
+<div id="map"><div class="plate"></div></div>
+<div id="capture" title="keep a ripple"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle class="arc" cx="12" cy="12" r="9" transform="rotate(-90 12 12)"/><circle class="dot" cx="12" cy="12" r="4"/></svg></div>
+<div id="ambient" title="ambient water"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><g class="moving"><path d="M6.6 9.4 c1.1 -1.7 2.2 -1.7 3.3 0 s2.2 1.7 3.3 0 s2.2 -1.7 3.2 0"/><path d="M6.6 13 c1.1 -1.7 2.2 -1.7 3.3 0 s2.2 1.7 3.3 0 s2.2 -1.7 3.2 0"/><path d="M6.6 16.6 c1.1 -1.7 2.2 -1.7 3.3 0 s2.2 1.7 3.3 0 s2.2 -1.7 3.2 0"/></g><g class="still"><path d="M6.8 9.4 h10.4 M6.8 13 h10.4 M6.8 16.6 h10.4"/></g></svg></div>
+<div id="mute" title="mute"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path class="wave" d="M6.4 12.6 c1.3 -2.4 2.5 -2.4 3.8 0 s2.5 2.4 3.8 0 s2.5 -2.4 3.6 0"/><path class="flat" d="M6.6 12 h10.8"/></svg></div>
+<div id="maptoggle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6" class="me"/><path d="M12 3 v3 M12 18 v3 M3 12 h3 M18 12 h3"/></svg></div>
+<input type="file" id="sampleIn" accept="audio/*" hidden>
+<div id="naming"><input id="nameIn" type="text" placeholder="where was this?" autocomplete="off" autocapitalize="none" spellcheck="false"><p>enter to keep it</p></div>
+<div id="seq"></div>
+<div id="params"></div>
+<div id="taken"><svg viewBox="0 0 24 24"><path d="M12 3.2 C12 3.2 5.6 10.4 5.6 14.6 a6.4 6.4 0 0 0 12.8 0 C18.4 10.4 12 3.2 12 3.2 Z"/><path d="M9.4 14.8 l1.9 1.9 l3.6 -3.9"/></svg><b>0</b><u>taken out of the water</u></div>
+<div id="arrived"></div>
+<div id="names"><div class="close">&times;</div><div class="inner"></div></div>
+<div id="shelf"><div class="close">&times;</div><div class="inner"></div></div>
+<div id="creekp"></div>
+<div id="deepp"></div>
+<div id="seqhelp">tap the circles to lay down a rhythm &middot; the ring at the left of a row changes its sound<br>press play to set it going &middot; the dials below set tempo, swing, echo, chorus and drift</div>
+<div id="compass"></div>
+<div id="status" style="position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));font:11px system-ui;color:#6c8;opacity:0;pointer-events:none"></div>
+<div id="err">This piece needs WebGL2 with floating point textures. Try a newer browser.</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

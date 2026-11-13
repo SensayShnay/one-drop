@@ -1,0 +1,17 @@
+# Read by Cloudflare Pages and Netlify.
+# The audio never changes once published, so it can be cached hard. The code
+# does change, so it is kept on a short leash, and the page itself is always
+# revalidated so a new version is picked up on the next load.
+
+/audio/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/src/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

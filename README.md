@@ -1,0 +1,262 @@
+# One Drop
+
+A tribute to water. Dark abstract surface, ripples you touch, sounds that answer.
+
+## Run it
+
+    cd ~/"One Drop"/app
+    python3 serve.py            # http on 8080
+    python3 serve.py --https    # https on 8443, needed for the microphone on the phone
+
+It prints both addresses. The phone must be on the same wifi. With `--https`,
+Safari warns once about the certificate: Show Details, then Visit This Website.
+The microphone only works on a secure origin, so recording a pin on the phone
+needs the https mode. On the Mac, plain http on localhost is already secure.
+
+## What's there
+
+- **The surface.** Touch to drop, drag to drift, fling to glide. While an
+  instrument is actually being played the water holds still, so nothing drifts out
+  from under your hand mid-note. Ripples are
+  irregular and throw off satellite droplets.
+- **Seven regions.** cove (home), rain, river, deep, the creek, the hollow (a cave of wet
+  stone, close and dark, with its own dripping ambience and a long reverb), and
+  the ice: a frozen sheet rather than water, pale and matte, with a grain of its
+  own locked to the world so it holds still underfoot, frost along the seams and
+  darker patches where it is thin. It carries no waves at all: touch it and
+  nothing ripples, because it is solid. Every one of them is an instrument. They blend at the edges and
+  draw you in. Drag or tap a compass word at the screen edge to travel.
+- **Weather.** Storms are rare, the way they are most days: four to eight minutes
+  apart. They come in thick and often, one to two minutes apart, only when it is
+  actually raining or storming wherever you are, which the app asks your browser
+  and Open-Meteo about once it is awake and then every twenty minutes. Say no to
+  the location question, or open it over plain http on a phone, and it simply
+  stays mostly calm. It rains about
+  twice as hard as it used to, and while it rains the rest of the water steps back
+  so the rain has the room.
+- **What the water plays by itself.** Loose drops are droplets, drops, short drips,
+  bubbles, space drops, deep splash and lunge. Splash and the two swishes never
+  fall on their own; they
+  only sound from a sequencer track set to them.
+  Beds: pier at the cove, drops and pond in the rain, underwater in the deep,
+  pouring in the river, chimes carried along by the creek, cold wind and working
+  ice over the sheet. The hollow is
+  its own world: step into the cave and everything but its own dripping steps
+  aside, loose drops included, so the drips are all you hear in there. `moves` is not a bed at all any more: it answers to how
+  much water is actually being pushed around, and fades out when you stop.
+- **A real sky.** The light follows your own clock and the season: it climbs and
+  falls with the sun where you are, goes amber near the horizon at either end of
+  the day, and at night depends on how full the moon actually is tonight.
+- **Something below.** Now and then a shape passes under the surface, trailing
+  light and troubling the water. Rare, and shy of storms.
+- **The sequencer**, in the river. 4 tracks x 16 steps, and it starts empty:
+  nothing is laid down until you lay it down. Each row is named on the left with
+  what it plays, and the name stays there rather than flashing up and going; tap
+  it to change the voice. The ring at the top left starts and stops it; it
+  starts stopped, so arriving in the water is quiet until you go and find it.
+  A line of help appears above the grid the first time you arrive and gets out of
+  the way once you touch anything. Below: tempo, swing, echo, chorus and drift,
+  each with its value written out. The ambient water drops about 13 dB
+  while a pattern is playing, loose drops included, and comes back when you stop it.
+  Thirteen voices: nine sampled (drips, drops, splash, deep, bubbles, space, swish,
+  glass, rim) and four played as notes on a D minor pentatonic -- resonant (a water hit
+  struck into a tuned pipe), bell (FM), blip (a drop hitting still water), chime.
+  The four rows sit two octaves apart, and the note follows the step, so a pattern
+  spread across the bar becomes a melody.
+- **The echo cave**, in the hollow. Hold a finger still on the water and the cave
+  listens. Your voice comes straight back off the walls while you sing, the water
+  moves with it and a glow swells around your hand. Let go and the cave answers:
+  what you sang, given back in pieces at other pitches, thinning out over ten to
+  twenty seconds, every fragment poured through a big stone room and troubling the
+  surface as it passes. Up to twenty seconds a go. Needs the microphone, so on the
+  phone it needs the https mode.
+- **The rain harp**, in the rain. Tap to set a leaf out on the water. You do not
+  play the leaves; the rain does. Each drop that lands on one plucks it, so the
+  weather is the performer and you only choose which notes are available to it.
+  Pitch runs left to right, low to high, and a storm turns the whole thing into a
+  wind chime. A leaf sounds warm and round rather than metallic, with a short tail,
+  since rain hits a lot of leaves and a long one would wash the whole thing out,
+  and it keeps a real drop of water in the attack: the pitch is the leaf, the
+  sound of the hit is the rain landing on it. Six species of leaf, told apart by outline, proportion and vein:
+  willow, lance, lily, heart, oval and fan. Tap a leaf to take it away, or let them all go.
+  Once there are leaves on the water, keys come up underneath them: three short
+  loops taken in turn at random so the bed never settles into a shape you can
+  predict. They arrive with the first leaf and leave with the last, fade out if
+  you wander away from the rain, and keep playing when the ambient water is set
+  aside, because they belong to the instrument rather than to the weather. All
+  three were tuned by ear to the harp's own G minor; two of the three were a
+  semitone off what their names claimed.
+- **The singing bowls**, in the cove. Five of them, standing where they have
+  always stood. They are not something you carry about: they are fixtures, and the
+  water plays them. G B C D F, the lowest note in the biggest bowl, each a
+  recording of a real bowl rung round its rim, and each tuned to its own note
+  since a real bowl is not made to A440 and these five did not agree.
+  **Each bowl holds its own water.** Its rim is a wall in the wave simulation, so
+  a ripple raised inside one stays inside, going round and round and breaking
+  against the rim, while the open water outside breaks against it rather than
+  washing through. Touch the water inside a bowl and it rings, and the ripple you
+  made stays in it. Touch anywhere else in the cove and the ripple travels out,
+  and every bowl the wavefront reaches rings as it arrives, nearest first and
+  quieter the further it had to come, so one touch in open water rolls a chord
+  across all five. **Rub a slow circle inside a bowl** and it sings the way a wet
+  finger round a rim does, for as long as you keep it going and a good while
+  after; going one way brightens the tone, the other darkens it. The ambient water
+  steps back about 13 dB while a bowl is singing. Straight drags and scribbles
+  leave them alone. The cove is sheltered water, so drift dies away there within a
+  few inches and the bowls stay where your hand left them.
+- **The soundings**, in the deep. Tap to lay a stone on the bed; its pitch
+  comes from how deep in the pool it lies, low at the bottom. Stones make no sound
+  of their own, but any ripple that passes over one makes it ring, so touching the
+  water sends out a wavefront that strikes your stones in order of distance. The
+  spacing of the stones is the rhythm. The tone is warm and round rather than
+  metallic. Tap a stone to lift it out, or "let them sink" to clear the bed and
+  start again. **Key and scale** are yours to set, below the water: twelve keys
+  and seven scales, from minor pentatonic to whole tone, and the stones keep
+  their places and take their new notes. Fourteen at most, and they are remembered between sessions.
+- **The ice.** Press it and it splits: two to four arms run out from under your
+  finger, straight for a while and then turning all at once, the way ice actually
+  goes, throwing off a branch here and there. You hear it running in two
+  parts: on top the snapping, short pieces cut from the transients of real ice,
+  falling in pitch as the crack travels, and under it the low groan of the sheet
+  sliding against itself. Every branch snaps as it is born. Let go and the sheet
+  rings at a note set by how far the crack reached, so a tap is high and a long
+  hold is low, two and a half octaves between them. The cracks stay, and a new one
+  cannot cross an old one or an open hole, so the sheet fills up and later cracks
+  come out shorter and higher. Keep pressing after a crack has run as far as it can
+  and the same gesture turns into melting: the ice opens into a hole of water that
+  drips at a pitch set by its width, slowly for a wide hole and quickly for a
+  narrow one, climbing as it freezes shut again within ten or twenty seconds. **Touch the
+  open water in a hole** and it freezes over on its own, from the edge in, and the
+  rest of the sheet stays as you left it. Everything in the melt goes through a
+  room of its own: a long pale reverb and a slow echo, each repeat a little
+  darker, and a hole answers its own note with the fifth above it a moment later.
+  About ten
+  long holds is all the sheet will take, and then it gives way, and freezes clean.
+  **The holes play each other.** A crack running near a hole bends toward it, the
+  way a fracture finds a weak point, and a crack that joins two holes becomes a
+  line between them. After that, every time one hole drips, a light runs out along
+  its cracks and rings whatever hole it arrives at, which passes it on again,
+  fainter each time, until it dies out three or four holes away. Melt enough of
+  them and the sheet plays itself. **Refreeze** at the bottom of the screen takes
+  it all back to clean ice.
+- **The creek.** Shallow water running downhill over stones, clear enough to see
+  the bed through it. Touch the water to set a rock in it. The flow comes down in
+  surges, and every rock the water breaks on rings as the surge reaches it, so the
+  creek plays itself once you have given it something to break on. The surge is
+  a crest of moving water rather than a line: one body of it with a thickness that
+  swells and thins along its length, a bright edge where it catches the light, and
+  chop riding on top, all of it fading out at either bank. It is built fresh on
+  every pass, so no two go by the same shape. Where a rock
+  sits **across** the stream is its note, eight of them in C, low on the near bank
+  and high on the far one; how far **down** it sits is **when** in the bar it
+  sounds. So a rock is a note and a moment at once, and dragging one moves it in
+  both. Take hold of a rock to move it, let go without moving it to lift it out,
+  or "lift the rocks" to clear the bed. Twelve at most, remembered between
+  sessions. An **echo** below the water sets how far each chime carries: the
+  sample was cut from a run of chimes falling over each other, so there is no
+  long clean note to be had in it, and the ring comes from the room instead. The chime is one strike cut from the front of a real flow chime and
+  tuned, so every rock is the same bell at a different pitch; dropping a rock in
+  sets off the whole descending run.
+- **The cycle.** A single drop waits out in open water, east of the cove, and on
+  the chart. Touch it and
+  you go with it: still water, the sun taking it, a mile up in cloud, the fall,
+  down the leaf into the creek, out to the dark, frozen for a century, and back
+  here. Eight stages, a line each and a drawing of what is happening to the
+  water, about a hundred seconds. You never stop being
+  water, so the surface never stops being the surface: only what it is made of
+  changes, from vapour with the colour drained out to ice that holds still. **Let it go** at the bottom
+  ends it early, with arrows either side of it to step through the stages by hand
+  when you would rather look at one part than wait the whole way round.
+- **What does not belong.** Now and then something drifts in that is not water: a
+  torn scrap of plastic, an oily sheen, a bloom of foam, a tangle of line, a can.
+  Touch it and you lift it out; the water takes a ripple and one line surfaces in
+  a quiet panel, said once and then let go. Each kind of thing has its own lines,
+  dealt without repeating until that kind has nothing left to say, so you are not
+  told the same thing twice in an afternoon. Round numbers get a line of their
+  own. **A running count sits in the top left** of the screen, a drop with a tick
+  in it, which brightens and names itself for a moment each time you take
+  something out. Leave things floating and the water slowly dulls, the
+  light below getting through less; take them out and it clears again. Storms wash
+  more of it in.
+  The lines are checked rather than invented, from The Ocean Cleanup on river
+  plastic and the University of Minnesota Extension on riparian buffers; both are
+  cited at the top of `src/drift.js`.
+- **Keeping a ripple.** The first ring in the top right records the water and
+  everything you can hear, for up to twenty seconds or until you touch it again.
+  The ring fills as it rolls. When it is done, "keep this ripple" appears: touch it
+  and the phone opens its share sheet, or on a computer the file saves. What comes
+  out is the water **and what is standing on it**: the bowls, the stones, the
+  leaves, the rocks and the surge, the cracks and the holes in the ice, the pins,
+  and anything floating that does not belong. The instruments are drawn as
+  elements laid over the canvas, and a canvas recording only ever sees the canvas,
+  so while a recording is rolling each of them also notes where it is, and the
+  recorder paints those onto a canvas of its own over a copy of the water. The
+  controls and the writing stay out of it, which is still what you want.
+- **Four rings in the top right,** each naming itself when you hover or touch it. Keep a ripple; set the ambient water aside while
+  Keep a ripple; set the ambient water aside while every instrument keeps playing;
+  mute; and the chart. All of them remember your choice.
+- **Mute.** The wave ring in the top right, beside the chart. It silences everything
+  while the water keeps moving, and remembers your choice.
+- **Pins.** Lights floating on the water, each one a sound. Drift near and it
+  surfaces; tap to hear it close; **drag one to carry it somewhere else**, which is
+  how you tidy them: put each near the water it belongs to. Hold one for a moment
+  to let it dissolve.
+  **Hold a finger still on the water** to record a new one, release to keep it,
+  then give it a name. While it is listening, **slide your finger up** to add an
+  audio file instead of recording. Stored on this device only (IndexedDB) for now.
+- **Looking after them.** A pin is a file, and files want looking after, so the
+  chart has a way in to all of them at once: *look after what you have left*. Every
+  pin is listed with the area it is sitting in and how long ago you made it, and
+  each one can be played, renamed in place, saved to the device as an audio file,
+  gone to on the water, or taken out for good. The × asks once before it does it.
+  Sort by newest, by name, or by where they are, and the choice is remembered. The
+  two that come with the water can be played and dismissed but not downloaded,
+  since they are part of the app rather than yours.
+- **The naming of water.** Every area here is named after a real kind of water,
+  and there are dozens more. The chart opens an index of fifty-two of them,
+  grouped by what they do: water on the move, water at rest, where the land gives
+  way, ground that holds water, and water we made ourselves. Each gets a line
+  saying what it actually is, and the ones that exist in this piece are marked
+  *you can go there* and will take you. At the end, four things worth knowing,
+  with the source named where there is one. Arriving somewhere for the first time,
+  the water also tells you once, quietly, what it is called and what that means,
+  and then leaves you alone. The definitions are written for this piece; the
+  figure on ice comes from the U.S. Geological Survey, cited in place and in
+  `src/names.js`.
+- **The chart.** The ring in the top right corner opens a map of the whole water:
+  every area, every pin, and where you are. Each area that can be played shows its
+  instrument: touch the mark to go straight to it. The chart's own menu sits at
+  the top left, clear of the water it is describing: what you have left, the
+  naming of water, and the cycle. Touch anywhere else to set off
+  for that spot, open water included. You arrive and stay put: the areas stop tugging
+  until you take hold of the water again.
+
+## Layout
+
+- `index.html`  the page, the wake veil, all the styling
+- `src/surface.js`  WebGL2 height-field wave sim + shading
+- `src/audio.js`  Web Audio: hits, region layers, submerge, cavern, sequencer
+- `src/pins.js`  the pins: storage, placement, proximity sound
+- `src/soundings.js`  the soundings: stones, wavefronts, what rings when
+- `src/bowl.js`  the singing bowl: circle fitting, the drone it drives
+- `src/harp.js`  the rain harp: leaves, and what the rain does to them
+- `src/capture.js`  keeping a ripple: compositing the water and its marks, and the sound, as one file
+- `src/marks.js`  where everything on the water is, so a recording can show it
+- `src/drift.js`  what does not belong: the things that float in, and what they say
+- `src/story.js`  the cycle: the eight stages and what each does to the water
+- `src/creek.js`  the creek: the rocks, the surge, and what each one rings
+- `src/names.js`  the naming of water: the index, and what each kind is
+- `src/ice.js`  the ice: how a crack runs and branches, and the holes you melt
+  (the echo cave lives in audio.js `openCave`/`scatter` and main.js)
+- `src/main.js`  touch, drift, regions, weather, recording, wiring
+- `audio/`  compressed copies of the samples (originals untouched in Water Samples)
+
+## Still to come
+
+- A found loop could be shared as a link rather than a file (needs a backend)
+- Breath mode, the properties lab, rituals, floating lanterns
+
+- Pins shared between people (needs a backend; local only today)
+- Saving and sharing a loop from the sequencer
+- Real night and day, life under the surface, breath mode
+- Capacitor wrap for iOS
