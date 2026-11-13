@@ -252,6 +252,8 @@ Cloudflare config, `serve.py`, this file — is plumbing, and is never served.
 - `public/src/ice.js`  the ice: how a crack runs and branches, and the holes you melt
   (the echo cave lives in audio.js `openCave`/`scatter` and main.js)
 - `public/src/main.js`  touch, drift, regions, weather, recording, wiring
+- `public/icon.svg`, `public/apple-touch-icon.png`, `public/manifest.webmanifest`  the
+  home-screen icon: a drop over its own rings, the cycle's first stage
 - `public/audio/`  compressed copies of the samples (originals untouched in Water Samples)
 
 ## About the audio

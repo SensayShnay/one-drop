@@ -1,3 +1,9 @@
+/*.png
+  Cache-Control: public, max-age=604800
+
+/icon.svg
+  Cache-Control: public, max-age=604800
+
 # Read by Cloudflare Pages and Netlify.
 # The audio never changes once published, so it can be cached hard. The code
 # does change, so it is kept on a short leash, and the page itself is always
