@@ -253,7 +253,9 @@ Cloudflare config, `serve.py`, this file — is plumbing, and is never served.
   (the echo cave lives in audio.js `openCave`/`scatter` and main.js)
 - `public/src/main.js`  touch, drift, regions, weather, recording, wiring
 - `public/icon.svg`, `public/apple-touch-icon.png`, `public/manifest.webmanifest`  the
-  home-screen icon: a drop over its own rings, the cycle's first stage
+  home-screen icon: a drop over rings that run off the edge of the tile, so the
+  water reads as continuing past it. Colder than the app itself, because the
+  rings need a ground to sit against or they vanish at the size a phone draws them
 - `public/audio/`  compressed copies of the samples (originals untouched in Water Samples)
 
 ## About the audio
