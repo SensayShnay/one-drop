@@ -251,6 +251,13 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
 - `src/main.js`  touch, drift, regions, weather, recording, wiring
 - `audio/`  compressed copies of the samples (originals untouched in Water Samples)
 
+## About the audio
+
+The recordings in `audio/` are compressed copies of commercial sample-pack
+material, used here as the voice of the piece. They are published with it so the
+work runs, not as a sample library: please do not lift them for your own
+projects. The code is another matter and you are welcome to it.
+
 ## Still to come
 
 - A found loop could be shared as a link rather than a file (needs a backend)
