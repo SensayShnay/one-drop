@@ -1343,8 +1343,14 @@ function ambient(now) {
 
 document.addEventListener('visibilitychange', () => {
   if (!sound.ctx) return;
-  if (document.hidden) sound.ctx.suspend(); else sound.ctx.resume();
+  if (document.hidden) sound.ctx.suspend(); else sound.resumeAudio();
 });
+// Coming back from the background, iOS may have moved the context to its own
+// 'interrupted' state and dropped the audio session with it. Both need asking
+// for again, and a resume outside a gesture can still be refused, which is why
+// any touch on the water asks a second time.
+addEventListener('pageshow', () => sound.resumeAudio());
+addEventListener('focus', () => sound.resumeAudio());
 addEventListener('resize', () => surface.resize());
 
 // ---------- the loop ----------

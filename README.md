@@ -302,6 +302,29 @@ material, used here as the voice of the piece. They are published with it so the
 work runs, not as a sample library: please do not lift them for your own
 projects. The code is another matter and you are welcome to it.
 
+## Sound on an iPhone
+
+iOS hands any page holding an AudioContext the *ambient* audio session. Ambient
+is the channel the ring/silent switch mutes and the channel that stops when the
+screen locks, so an iPhone on silent played none of this and gave no hint why.
+An `<audio>` element would have been fine. Web Audio, which is all of this, was
+not.
+
+So the first touch asks for the *playback* session instead, the one a music app
+gets: `navigator.audioSession.type = 'playback'` on iOS 17 and later, and on
+anything older a half-second of silence looping through an `<audio>` element,
+which moves the page onto the same channel the long way round. It is asked for
+again on every resume, because coming back from the background can drop it.
+
+The cost is that One Drop stops sharing the speaker. Starting it pauses whatever
+else was playing, the way a video does. For a piece that exists to make sound
+that is the right trade, and it is the trade a native app would have made.
+
+One known iOS bug is outside our reach: in a web app opened from the Home
+Screen, audio can go silent after returning from the background. It has been
+reported from iOS 18 through 26. Touching the water asks for the session and a
+resume again, which is the best we can do from here.
+
 ## Deploying
 
 The live site is <https://one-drop.sheneurmenaker.workers.dev/>, served by

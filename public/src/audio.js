@@ -46,8 +46,56 @@ export class Sound {
     this.ready = false;
   }
 
+  // iOS hands a page holding an AudioContext the "ambient" audio session. Ambient
+  // is the channel the ring/silent switch mutes, and the channel that stops when
+  // the screen locks, so an iPhone on silent plays none of this and gives no hint
+  // why. An <audio> element would have been fine; Web Audio is not.
+  //
+  // So ask for the session a music app gets instead. The cost is that we stop
+  // sharing the speaker: starting up pauses whatever else was playing, the way a
+  // video does. For a piece that is only here to make sound, that is the right
+  // trade, and it is the same trade a native app would have made.
+  claimPlayback() {
+    try {
+      if ('audioSession' in navigator) { navigator.audioSession.type = 'playback'; return true; }
+    } catch {}
+    return false;
+  }
+
+  // Before iOS 17 there is no such API and the only lever is an <audio> element:
+  // a page playing one is moved to the playback session, and the Web Audio comes
+  // with it. Half a second of silence on a loop, built here rather than fetched.
+  carryPlayback() {
+    if (this.carrier || typeof Audio === 'undefined') return;
+    try {
+      const rate = 8000, n = rate / 2, bytes = 44 + n;
+      const b = new ArrayBuffer(bytes), v = new DataView(b);
+      const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+      str(0, 'RIFF'); v.setUint32(4, bytes - 8, true); str(8, 'WAVEfmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, rate, true); v.setUint32(28, rate, true);
+      v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+      str(36, 'data'); v.setUint32(40, n, true);
+      for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);   // 128 is silence, unsigned 8-bit
+      const a = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
+      a.loop = true; a.playsInline = true; a.preload = 'auto';
+      const pr = a.play(); if (pr && pr.catch) pr.catch(() => {});
+      this.carrier = a;
+    } catch {}
+  }
+
+  // Safari parks the context in a state of its own, "interrupted", after a call,
+  // Siri, or a home-screen app coming back from the background, and it needs the
+  // same nudge as a suspended one.
+  resumeAudio() {
+    if (!this.ctx) return;
+    if (!this.claimPlayback()) this.carryPlayback();
+    if (this.ctx.state !== 'running') { try { this.ctx.resume(); } catch {} }
+  }
+
   // Must be called from a user gesture.
   async wake() {
+    if (!this.claimPlayback()) this.carryPlayback();
     if (this.ctx) { if (this.ctx.state !== 'running') await this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     this.ctx = new AC({ latencyHint: 'interactive' });
