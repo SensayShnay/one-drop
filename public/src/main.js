@@ -7,6 +7,7 @@ import { Names } from './names.js';
 import { SCALES, KEYS } from './soundings.js';
 import { Bowls } from './bowl.js';
 import { Harp } from './harp.js';
+import { Snow } from './snow.js';
 import { Capture } from './capture.js';
 import { MARKS } from './marks.js';
 import { Drift } from './drift.js';
@@ -26,14 +27,36 @@ try {
 }
 const sound = new Sound('./audio/');
 const pins = new Pins(sound, surface, document.getElementById('pins'));
-const DEEP = { x: 0.3, y: 1.7, r: 1.1 };   // where the soundings lie
-const CREEK = { x: -3.5, y: 2.35, r: 1.0 };  // where the water runs over the rocks
+
+// ---------- where everything is ----------
+// Positions are in screen-heights. You start in the cove. Areas blend at their
+// edges and pull you in gently if you drift near while not touching. They are
+// spread wider than they first were: they used to overlap, and an area needs
+// open water around it or arriving in one means nothing.
+//
+// This list is the only place any of it is written down. The instruments used to
+// carry a second copy of their own area's position, and spreading the areas once
+// moved the water out from under them.
+const REGIONS = [
+  { key: 'cove',    x: 0,     y: 0,     r: 0.8, inst: 'bowl' },
+  { key: 'rain',    x: 1.75,  y: -1.25, r: 1.0, inst: 'harp' },
+  { key: 'river',   x: -1.8,  y: 0.65,  r: 1.1, inst: 'sequencer' },
+  { key: 'deep',    x: 0.4,   y: 2.2,   r: 1.1, inst: 'soundings' },
+  { key: 'hollow',  x: -1.35, y: -1.9,  r: 1.0, inst: 'cave' },
+  { key: 'ice',     x: -3.3,  y: -1.35, r: 1.0, inst: 'crack' },
+  { key: 'creek',   x: -3.5,  y: 2.35,  r: 1.0, inst: 'rocks' },
+  { key: 'snow',    x: -2.3,  y: -3.9,  r: 1.0, inst: 'flake' },
+];
+const place = k => REGIONS.find(r => r.key === k);
+const COVE = place('cove'), RAIN = place('rain'), DEEP = place('deep');
+const CREEK = place('creek'), ICE = place('ice'), SNOW = place('snow');
+
 const creek = new Creek(sound, surface, document.getElementById('rocks'),
                         document.getElementById('surge'), CREEK, CREEK.r);
 const soundings = new Soundings(sound, surface, document.getElementById('stones'), DEEP, DEEP.r);
-const bowl = new Bowls(sound, surface, document.getElementById('bowls'), { x: 0, y: 0 });
-const RAIN = { x: 1.35, y: -0.95, r: 1.0 };
+const bowl = new Bowls(sound, surface, document.getElementById('bowls'), COVE);
 const harp = new Harp(sound, surface, document.getElementById('leaves'), RAIN, RAIN.r);
+const snow = new Snow(sound, surface, document.getElementById('snowfield'), SNOW, SNOW.r);
 const capture = new Capture(sound, canvas);
 const drift = new Drift(sound, surface, document.getElementById('things'), document.getElementById('said'));
 // the tally, kept on screen rather than only on the chart
@@ -46,7 +69,6 @@ function showTaken(n, flash) {
 }
 drift.onLift = n => showTaken(n, true);
 showTaken(drift.lifted, false);
-const ICE = { x: -2.55, y: -1.05, r: 1.0 };
 const ice = new Ice(sound, surface, document.getElementById('cracks'), document.getElementById('holes'), ICE, ICE.r);
 const story = new Story(sound, surface, document.getElementById('onedrop'),
                         document.getElementById('said'), document.getElementById('cyclefig'));
@@ -72,24 +94,10 @@ document.getElementById('leave').addEventListener('pointerdown', e => {
   document.body.classList.remove('cycling');
   haptic(8);
 });
-window.__onedrop = { surface, sound, pins, soundings, bowl, harp, capture, drift, story, ice, creek }; // dev hook
+window.__onedrop = { surface, sound, pins, soundings, bowl, harp, capture, drift, story, ice, creek, snow }; // dev hook
 
 // ---------- the world ----------
-// Positions are in screen-heights. You start in the cove. Regions blend at their edges
-// and pull you in gently if you drift near while not touching.
-// Spread a little wider than they were: they used to overlap, and an area needs
-// open water around it or arriving in one means nothing.
-const REGIONS = [
-  { key: 'cove',    x: 0,     y: 0,     r: 0.8, inst: 'bowl' },
-  { key: 'rain',    x: 1.75,  y: -1.25, r: 1.0, inst: 'harp' },
-  { key: 'river',   x: -1.8,  y: 0.65,  r: 1.1, inst: 'sequencer' },
-  { key: 'deep',    x: 0.4,   y: 2.2,   r: 1.1, inst: 'soundings' },
-  { key: 'hollow',  x: -1.35, y: -1.9,  r: 1.0, inst: 'cave' },
-  { key: 'ice',     x: -3.3,  y: -1.35, r: 1.0, inst: 'crack' },
-  { key: 'creek',   x: CREEK.x, y: CREEK.y, r: CREEK.r, inst: 'rocks' },
-];
-
-// ---------- a world that comes back around ----------
+// ---------- and that it comes back around ----------
 // The water has no edge, but it does have a size. Swim far enough in any
 // direction and the same places come round again, because every place is really
 // in every tile of an endless grid and you are always shown the nearest copy.
@@ -773,6 +781,7 @@ function drawMap() {
   // each area that can be played says so, and takes you straight there
   const GLYPH = {
     bowl: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/></svg>',
+    flake: '<svg viewBox="0 0 24 24"><path d="M12 2.5 v19 M3.8 7.2 l16.4 9.6 M20.2 7.2 l-16.4 9.6"/><path d="M12 6.6 l-2.4 -2.4 M12 6.6 l2.4 -2.4 M12 17.4 l-2.4 2.4 M12 17.4 l2.4 2.4"/><path d="M7.5 9.2 l-3.3 0.2 M7.5 9.2 l-1 -3.1 M16.5 14.8 l3.3 -0.2 M16.5 14.8 l1 3.1"/><path d="M16.5 9.2 l3.3 0.2 M16.5 9.2 l1 -3.1 M7.5 14.8 l-3.3 -0.2 M7.5 14.8 l-1 3.1"/></svg>',
     harp: '<svg viewBox="0 0 24 24"><path d="M5 3.5 v17 M12 3.5 v17 M19 3.5 v17"/><circle class="fill" cx="5" cy="9" r="1.5"/><circle class="fill" cx="12" cy="14" r="1.5"/><circle class="fill" cx="19" cy="7" r="1.5"/></svg>',
     sequencer: '<svg viewBox="0 0 24 24"><circle class="fill" cx="4" cy="12" r="1.8"/><circle cx="10" cy="12" r="1.8"/><circle class="fill" cx="16" cy="12" r="1.8"/><circle cx="22" cy="12" r="1.8"/></svg>',
     soundings: '<svg viewBox="0 0 24 24"><circle class="fill" cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="10"/></svg>',
@@ -1183,6 +1192,11 @@ canvas.addEventListener('pointerdown', e => {
   }
   // in the cove, touching the water inside a bowl rings it, and the ripple it
   // raises stays in that bowl rather than running off across the water
+  // in the snowfield a touch is for the air, not the water: if a crystal is
+  // under your finger you take it, and the surface is left alone
+  if ((smoothW.snow || 0) > 0.25 && snow.catchAt(e.clientX, e.clientY)) {
+    settle(); haptic(8); return;
+  }
   if (smoothW.cove > 0.3) {
     const w = screenToWorld(e.clientX, e.clientY);
     if (bowl.tap(w.x, w.y, e.clientX, e.clientY)) { settle(); haptic(12); return; }
@@ -1394,6 +1408,7 @@ function frame(now) {
     creek.update(world, smoothW.creek || 0, dt, now);
     bowl.update(now, dt, smoothW.cove, pointers.size > 0, world);
     harp.update(world, smoothW.rain);
+    snow.update(world, smoothW.snow, dt, now);
     ice.update(world, smoothW.ice || 0, dt, now);
     updateClear(dt);
     updateHint(dt);

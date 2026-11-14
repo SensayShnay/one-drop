@@ -20,6 +20,9 @@ const LAYERS = {
   ice:       { file: 'bed_ice',       level: 0.46 },   // cold wind, and the sheet working against itself
   icemelt:   { file: 'tex_icemelt',   level: 0.34 },   // only once there is open water
   creek:     { file: 'bed_creek',     level: 0.38 },   // chimes carried along by shallow water
+  // Snow deadens everything it falls on, so the snowfield is nearly silent: a
+  // thin cold wind a long way off, and otherwise only what the flakes say.
+  snow:      { file: 'bed_ice',       level: 0.20 },
   // There used to be a pond bed and a bed of keys under the rain harp. Both are
   // gone: under the rain there should be rain, and then only what the leaves say.
 };
@@ -254,6 +257,7 @@ export class Sound {
       ice: (w.ice || 0) * out,
       icemelt: (this.melt || 0) * out,
       creek: (w.creek || 0) * out,
+      snow: (w.snow || 0) * out,
     };
     const t = this.ctx.currentTime;
     const duck = 1 - 0.78 * (this.duck || 0);
@@ -693,6 +697,46 @@ export class Sound {
     setTimeout(() => {
       try { out.disconnect(); tone.disconnect(); if (p) p.disconnect(); for (const n of made) n.disconnect(); } catch {}
     }, (dur + 1.4) * 1000);
+  }
+
+  // A struck ice crystal. Where a bell's partials are stretched and a Rhodes's
+  // are whole-numbered, a thin rigid plate rings on ratios that belong to no
+  // harmonic series at all, which is why ice sounds like glass and not like a
+  // string. The top ones are gone in a quarter second; the bottom one hangs on
+  // and shivers, because the crystal is melting while it rings.
+  crystal(freq, when, gain, pan, dest, dur = 3.2) {
+    const ctx = this.ctx;
+    const out = ctx.createGain();
+    out.gain.value = gain;
+    const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (p) { p.pan.value = Math.max(-1, Math.min(1, pan)); out.connect(p).connect(dest); }
+    else out.connect(dest);
+
+    // plate modes: ratio, level, share of the note's length
+    const parts = [[1, 0.5, 1], [2.32, 0.2, 0.34], [3.81, 0.11, 0.17], [5.96, 0.06, 0.08]];
+    const made = [];
+    for (const [ratio, lvl, life] of parts) {
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.value = freq * ratio;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.exponentialRampToValueAtTime(lvl, when + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, when + Math.max(0.05, dur * life));
+      o.connect(g).connect(out);
+      o.start(when); o.stop(when + dur + 0.3);
+      made.push(o, g);
+    }
+    // a slow shiver on the fundamental, so it is never quite still as it goes
+    const vib = ctx.createOscillator(); vib.type = 'sine';
+    vib.frequency.value = 3.4 + Math.random() * 2.2;
+    const vamt = ctx.createGain(); vamt.gain.value = freq * 0.0025;
+    vib.connect(vamt).connect(made[0].frequency);
+    vib.start(when); vib.stop(when + dur + 0.3);
+    made.push(vib, vamt);
+
+    setTimeout(() => {
+      try { out.disconnect(); if (p) p.disconnect(); for (const n of made) n.disconnect(); } catch {}
+    }, (dur + 1.2) * 1000);
   }
 
   // one struck note, whatever the engine

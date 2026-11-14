@@ -107,6 +107,27 @@ export function paintMarks(ctx) {
       case 'crest':                                    // the surge coming down the creek
         line(ctx, m.pts, m.w || 1.4, '220,240,250', a);
         break;
+      case 'flake':                                    // a crystal on its way down
+      {
+        const R = m.r || 10;
+        ctx.strokeStyle = `rgba(226,244,255,${a * 0.85})`;
+        ctx.lineWidth = Math.max(0.6, R * 0.055);
+        ctx.lineCap = 'round';
+        for (let k = 0; k < (m.arms || 6); k++) {
+          const th = k * Math.PI / 3;
+          const dx = Math.cos(th), dy = Math.sin(th);
+          ctx.beginPath();
+          ctx.moveTo(m.x, m.y); ctx.lineTo(m.x + dx * R, m.y + dy * R);
+          // one pair of side branches, enough to read as a crystal at this size
+          const bx = m.x + dx * R * 0.55, by = m.y + dy * R * 0.55;
+          const px = -dy, py = dx, L = R * 0.26;
+          ctx.moveTo(bx, by); ctx.lineTo(bx + (dx * 0.7 + px) * L, by + (dy * 0.7 + py) * L);
+          ctx.moveTo(bx, by); ctx.lineTo(bx + (dx * 0.7 - px) * L, by + (dy * 0.7 - py) * L);
+          ctx.stroke();
+        }
+        glow(ctx, m.x, m.y, R * 0.8, '226,244,255', a * 0.22);
+        break;
+      }
       case 'drop':                                     // the one waiting out in open water
         glow(ctx, m.x, m.y, m.r * 2.6, '188,222,240', a * 0.5);
         ctx.strokeStyle = `rgba(214,236,248,${a * 0.8})`;

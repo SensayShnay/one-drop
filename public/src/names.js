@@ -70,6 +70,7 @@ export const KINDS = [
     ['the hollow', 'A cave with water standing in it, out of the weather and out of the light.', 'hollow'],
     ['the ice', 'Fresh water that has stopped. Most of the world’s fresh water is like this.', 'ice'],
     ['the rain', 'Where all the rest of it comes from.', 'rain'],
+    ['the snowfield', 'Water that fell as crystals and settled. Snow is the only shape water takes that has a shape at all, and no two of them are built the same way twice.', 'snow'],
   ]},
 ];
 

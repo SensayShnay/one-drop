@@ -19,7 +19,7 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
   instrument is actually being played the water holds still, so nothing drifts out
   from under your hand mid-note. Ripples are
   irregular and throw off satellite droplets.
-- **Seven regions.** cove (home), rain, river, deep, the creek, the hollow (a cave of wet
+- **Eight regions.** cove (home), rain, river, deep, the creek, the snowfield, the hollow (a cave of wet
   stone, close and dark, with its own dripping ambience and a long reverb), and
   the ice: a frozen sheet rather than water, pale and matte, with a grain of its
   own locked to the world so it holds still underfoot, frost along the seams and
@@ -78,6 +78,34 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
   twenty seconds, every fragment poured through a big stone room and troubling the
   surface as it passes. Up to twenty seconds a go. Needs the microphone, so on the
   phone it needs the https mode.
+- **The snowfield**, north of the hollow. Water's one structured state.
+  Everywhere else in the piece it is a surface or a volume; here it arrives as
+  objects, each one built, and what makes a snowflake a snowflake is that it is
+  the same six times round.
+
+  The view looks down at the water, so the snow does not fall down the screen.
+  It falls towards you. A flake starts far off, small and soft-edged, and
+  sharpens as it comes, until it touches the surface. What you do in that time
+  decides how you hear it: catch it in the air and it rings out, the whole
+  crystal at once; let it land and it says the same thing under its breath and
+  leaves a ring on the water instead.
+
+  A flake's sound is read off its shape rather than hung on it. The same three
+  numbers that grow the arms pick the notes: how many times it branched is how
+  many notes it has, how wide it branched is how far apart they are, and how big
+  it grew is how low it sits. So a tight little flake is a high close cluster and
+  a broad open one is a wide bright spread, and you can see which you are about
+  to hear before you reach for it. No two are built the same way twice, which is
+  the one thing everybody already knows about snow.
+
+  They speak in struck ice rather than anything with a harmonic series. A thin
+  rigid plate rings on ratios that belong to no series at all, which is why ice
+  sounds like glass and not like a string; the top partials are gone in a quarter
+  of a second and the bottom one hangs on and shivers, because the crystal is
+  melting while it rings. Under all of it there is almost nothing, since snow
+  deadens whatever it falls on: a thin cold wind a long way off, and otherwise
+  only what the flakes say.
+
 - **The rain harp**, in the rain. Tap to set a leaf out on the water. You do not
   play the leaves; the rain does. Each drop that lands on one plucks it, so the
   weather is the performer and you only choose which notes are available to it.
@@ -257,6 +285,7 @@ Cloudflare config, `serve.py`, this file — is plumbing, and is never served.
 - `public/src/story.js`  the cycle: the eight stages and what each does to the water
 - `public/src/creek.js`  the creek: the rocks, the surge, and what each one rings
 - `public/src/names.js`  the naming of water: the index, and what each kind is
+- `public/src/snow.js`  the snowfield: how a flake is grown, and how its shape becomes its chord
 - `public/src/ice.js`  the ice: how a crack runs and branches, and the holes you melt
   (the echo cave lives in audio.js `openCave`/`scatter` and main.js)
 - `public/src/main.js`  touch, drift, regions, weather, recording, wiring
