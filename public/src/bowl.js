@@ -121,7 +121,7 @@ export class Bowls {
     // keep the walls where the bowls are, in the simulation's own coordinates
     const rims = [];
     for (const b of this.bowls) {
-      const sx = ox + (b.wx - world.x) * ch, sy = oy + (b.wy - world.y) * ch;
+      const sx = ox + world.dx(b.wx) * ch, sy = oy + world.dy(b.wy) * ch;
       b.sx = sx; b.sy = sy;
       if (near > 0.06 && sx > -200 && sx < cw + 200 && sy > -200 && sy < ch + 200)
         rims.push([sx / cw, 1 - sy / ch, b.r]);
@@ -131,7 +131,7 @@ export class Bowls {
     // a slow circle inside a bowl sets it singing and keeps it going
     const r = touching ? this.read(now) : null;
     const on = this.energy > 0.1;
-    const held = r ? this.at(world.x + (r.cx - ox) / ch, world.y + (r.cy - oy) / ch) : null;
+    const held = r ? this.at(world.at(world.x + (r.cx - ox) / ch), world.at(world.y + (r.cy - oy) / ch)) : null;
     const rubbing = !!r && !!held
       && r.coherence > (on ? 0.5 : 0.62) && r.roundness > (on ? 0.6 : 0.72)
       && r.turned > (on ? 0.4 : 0.62) && r.speed > (on ? 0.6 : 0.85);
@@ -164,7 +164,7 @@ export class Bowls {
         if (f.r >= Math.max(0, d - b.r)) {
           f.rung.add(i);
           const level = Math.min(0.55, f.strength * 1.6 / (1 + d * 2.4)) * near;
-          if (level > 0.014) this.ring(b, level, Math.max(-1, Math.min(1, (b.wx - world.x) * 2.2)));
+          if (level > 0.014) this.ring(b, level, Math.max(-1, Math.min(1, world.dx(b.wx) * 2.2)));
         }
       }
     }

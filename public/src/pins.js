@@ -202,7 +202,7 @@ export class Pins {
     const cw = innerWidth, ch = innerHeight;
     const cx = cw / 2, cy = ch / 2;
     for (const pin of this.pins) {
-      const dx = pin.wx - world.x, dy = pin.wy - world.y;
+      const dx = world.dx(pin.wx), dy = world.dy(pin.wy);
       const d = Math.hypot(dx, dy);
       const sx = cx + dx * ch, sy = cy + dy * ch;
       const m = 22;

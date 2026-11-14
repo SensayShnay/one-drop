@@ -219,7 +219,7 @@ export class Creek {
       const passed = wrapped ? (at >= was || at < this.phase) : (at >= was && at < this.phase);
       if (passed && show) {
         this.strike(rock, near);
-        const sx = sx0 + (rock.wx - world.x) * ch, sy = sy0 + (rock.wy - world.y) * ch;
+        const sx = sx0 + world.dx(rock.wx) * ch, sy = sy0 + world.dy(rock.wy) * ch;
         if (sx > -60 && sx < cw + 60 && sy > -60 && sy < ch + 60) {
           this.surface.quiet = true;
           this.surface.drop(sx, sy, 10 + rock.size * 16, 0.05 + rock.size * 0.1);
@@ -228,7 +228,7 @@ export class Creek {
       }
       rock.lit *= Math.pow(0.1, dt);
 
-      const sx = sx0 + (rock.wx - world.x) * ch, sy = sy0 + (rock.wy - world.y) * ch;
+      const sx = sx0 + world.dx(rock.wx) * ch, sy = sy0 + world.dy(rock.wy) * ch;
       const px = (26 + rock.size * 34);
       const on = show && sx > -px && sx < cw + px && sy > -px && sy < ch + px;
       rock.el.style.display = on ? 'block' : 'none';
@@ -244,7 +244,7 @@ export class Creek {
     if (show && this.surgeEl) {
       if (wrapped) this.reseed();                        // no two passes the same
       const wy = (this.cy - DOWN) + this.phase * DOWN * 2;
-      this.drawCrest(sy0 + (wy - world.y) * ch, dt);
+      this.drawCrest(sy0 + world.dy(wy) * ch, dt);
       this.surgeEl.style.opacity = (0.5 * near).toFixed(3);
     } else if (this.surgeEl) this.surgeEl.style.opacity = 0;
   }

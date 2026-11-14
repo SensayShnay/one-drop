@@ -502,21 +502,6 @@
     border: 1px solid rgba(180, 206, 224, 0.3); cursor: pointer; opacity: 0.7;
     background: rgba(5, 9, 13, 0.8);
   }
-  /* the name of the water you have just arrived in */
-  #arrived {
-    position: fixed; left: 50%; transform: translateX(-50%);
-    top: calc(12vh + env(safe-area-inset-top));
-    width: fit-content; max-width: min(86vw, 460px); text-align: center;
-    font-family: 'Cormorant Garamond', Georgia, serif; pointer-events: none;
-    color: rgba(228, 240, 248, 0.95);
-    padding: 15px 22px; border-radius: 20px;
-    background: rgba(8, 14, 20, 0.66); backdrop-filter: blur(6px);
-    border: 1px solid rgba(170, 202, 222, 0.16);
-    opacity: 0; transition: opacity 2s ease; z-index: 12;
-  }
-  #arrived.show { opacity: 1; }
-  #arrived em { display: block; font-size: 19px; letter-spacing: 0.14em; opacity: 0.95; margin-bottom: 7px; }
-  #arrived span { font-size: 13.5px; line-height: 1.7; opacity: 0.68; }
   /* while the chart is up, the water's own marks step back */
   body.charting #compass span, body.charting #pins, body.charting #seq, body.charting #params {
     opacity: 0 !important; pointer-events: none !important; transition: opacity 0.4s ease;
@@ -821,12 +806,11 @@
 <div id="seq"></div>
 <div id="params"></div>
 <div id="taken"><svg viewBox="0 0 24 24"><path d="M12 3.2 C12 3.2 5.6 10.4 5.6 14.6 a6.4 6.4 0 0 0 12.8 0 C18.4 10.4 12 3.2 12 3.2 Z"/><path d="M9.4 14.8 l1.9 1.9 l3.6 -3.9"/></svg><b>0</b><u>taken out of the water</u></div>
-<div id="arrived"></div>
 <div id="names"><div class="close">&times;</div><div class="inner"></div></div>
 <div id="shelf"><div class="close">&times;</div><div class="inner"></div></div>
 <div id="creekp"></div>
 <div id="deepp"></div>
-<div id="seqhelp">tap the circles to lay down a rhythm &middot; the ring at the left of a row changes its sound<br>press play to set it going &middot; the dials below set tempo, swing, echo, chorus and drift</div>
+<div id="seqhelp">tap the grid to lay down a rhythm &middot; tap a row&rsquo;s name on the left to change what it plays<br>press play to set it going &middot; the dials below set tempo, swing, echo, chorus and drift</div>
 <div id="compass"></div>
 <div id="status" style="position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));font:11px system-ui;color:#6c8;opacity:0;pointer-events:none"></div>
 <div id="err">This piece needs WebGL2 with floating point textures. Try a newer browser.</div>

@@ -159,7 +159,7 @@ export class Soundings {
     const cw = innerWidth, ch = innerHeight, cx = cw / 2, cyp = ch / 2;
     // place the stones on screen
     for (const st of this.stones) {
-      const sx = cx + (st.wx - world.x) * ch, sy = cyp + (st.wy - world.y) * ch;
+      const sx = cx + world.dx(st.wx) * ch, sy = cyp + world.dy(st.wy) * ch;
       const on = sx > -60 && sx < cw + 60 && sy > -60 && sy < ch + 60;
       st.el.style.display = on ? 'grid' : 'none';
       if (on) st.el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) translate(-50%, -50%)`;
@@ -181,7 +181,7 @@ export class Soundings {
           // quieter the further it had to travel, and the fainter the ripple
           const level = Math.min(0.5, f.strength * 1.7 / (1 + d * 2.2)) * near;
           if (level > 0.012) {
-            const pan = Math.max(-1, Math.min(1, (st.wx - world.x) * 2.2));
+            const pan = Math.max(-1, Math.min(1, world.dx(st.wx) * 2.2));
             this.ring(st, level, pan);
           }
         }

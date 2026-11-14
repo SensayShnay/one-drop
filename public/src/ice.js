@@ -304,7 +304,7 @@ export class Ice {
         p.sinceTick += grew;
         if (p.sinceTick > 0.03) {
           p.sinceTick = 0;
-          this.tick(p.crack, Math.max(-1, Math.min(1, (p.wx - world.x) * 2)));
+          this.tick(p.crack, Math.max(-1, Math.min(1, world.dx(p.wx) * 2)));
         }
       }
       if (grew === 0 || this.reach(p.crack) >= 1) {
@@ -329,17 +329,17 @@ export class Ice {
       for (const b of c.branches) {
         const pts = b.pts;
         if (pts.length < 2) continue;
-        d += `M${(cx + (pts[0][0] - world.x) * ch).toFixed(1)},${(cy + (pts[0][1] - world.y) * ch).toFixed(1)}`;
+        d += `M${(cx + world.dx(pts[0][0]) * ch).toFixed(1)},${(cy + world.dy(pts[0][1]) * ch).toFixed(1)}`;
         if (scr.length) mark({ k: 'crack', pts: scr.splice(0), w: 1 + c.lit * 1.6,
                                a: Math.max(0, Math.min(1, (0.62 + c.lit * 0.38) * c.fade)) });
-        scr.push([cx + (pts[0][0] - world.x) * ch, cy + (pts[0][1] - world.y) * ch]);
+        scr.push([cx + world.dx(pts[0][0]) * ch, cy + world.dy(pts[0][1]) * ch]);
         // every third point is plenty; the wander is finer than the eye needs
         for (let i = 2; i < pts.length; i += 3) {
-          d += `L${(cx + (pts[i][0] - world.x) * ch).toFixed(1)},${(cy + (pts[i][1] - world.y) * ch).toFixed(1)}`;
-          scr.push([cx + (pts[i][0] - world.x) * ch, cy + (pts[i][1] - world.y) * ch]);
+          d += `L${(cx + world.dx(pts[i][0]) * ch).toFixed(1)},${(cy + world.dy(pts[i][1]) * ch).toFixed(1)}`;
+          scr.push([cx + world.dx(pts[i][0]) * ch, cy + world.dy(pts[i][1]) * ch]);
         }
         const last = pts[pts.length - 1];
-        d += `L${(cx + (last[0] - world.x) * ch).toFixed(1)},${(cy + (last[1] - world.y) * ch).toFixed(1)}`;
+        d += `L${(cx + world.dx(last[0]) * ch).toFixed(1)},${(cy + world.dy(last[1]) * ch).toFixed(1)}`;
       }
       c.el.setAttribute('d', d);
       if (scr.length > 1) mark({ k: 'crack', pts: scr, w: 1 + c.lit * 1.6,
@@ -357,7 +357,7 @@ export class Ice {
         this.holesEl.appendChild(this.openEl);
       }
       const px = opening.r * 2 * ch;
-      const sx = cx + (opening.wx - world.x) * ch, sy = cy + (opening.wy - world.y) * ch;
+      const sx = cx + world.dx(opening.wx) * ch, sy = cy + world.dy(opening.wy) * ch;
       this.openEl.style.display = 'block';
       this.openEl.style.width = this.openEl.style.height = px.toFixed(0) + 'px';
       this.openEl.style.transform = `translate(${sx.toFixed(0)}px, ${sy.toFixed(0)}px) translate(-50%, -50%)`;
@@ -369,7 +369,7 @@ export class Ice {
       const age = (now - h.born) / h.life;
       h.now = h.r * Math.max(0, 1 - age * age);
       openArea += h.now * h.now;
-      const sx = cx + (h.wx - world.x) * ch, sy = cy + (h.wy - world.y) * ch;
+      const sx = cx + world.dx(h.wx) * ch, sy = cy + world.dy(h.wy) * ch;
       const px = h.now * 2 * ch;
       const on = show && px > 2 && sx > -px && sx < cw + px && sy > -px && sy < ch + px;
       h.el.style.display = on ? 'block' : 'none';
@@ -403,8 +403,8 @@ export class Ice {
         }
         p.el.style.opacity = Math.min(1, p.e).toFixed(2);
         p.el.style.transform =
-          `translate(${(cx + (q[0] - world.x) * ch).toFixed(0)}px, ${(cy + (q[1] - world.y) * ch).toFixed(0)}px) translate(-50%, -50%)`;
-        mark({ k: 'spark', x: cx + (q[0] - world.x) * ch, y: cy + (q[1] - world.y) * ch,
+          `translate(${(cx + world.dx(q[0]) * ch).toFixed(0)}px, ${(cy + world.dy(q[1]) * ch).toFixed(0)}px) translate(-50%, -50%)`;
+        mark({ k: 'spark', x: cx + world.dx(q[0]) * ch, y: cy + world.dy(q[1]) * ch,
                a: Math.min(1, p.e) });
       }
       if (done) {

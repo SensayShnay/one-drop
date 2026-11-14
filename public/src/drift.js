@@ -88,8 +88,8 @@ export class Drift {
     this.layer.appendChild(el);
     const item = {
       ...t, el,
-      wx: world.x + Math.cos(ang) * 0.75,
-      wy: world.y + Math.sin(ang) * 0.75,
+      wx: world.at(world.x + Math.cos(ang) * 0.75),
+      wy: world.at(world.y + Math.sin(ang) * 0.75),
       vx: (Math.random() - 0.5) * 0.012,
       vy: (Math.random() - 0.5) * 0.012,
       born: now, size: 26 + Math.random() * 16,
@@ -131,7 +131,7 @@ export class Drift {
     const cw = innerWidth, ch = innerHeight;
     for (const it of this.items) {
       it.wx += it.vx * dt; it.wy += it.vy * dt;
-      const sx = cw / 2 + (it.wx - world.x) * ch, sy = ch / 2 + (it.wy - world.y) * ch;
+      const sx = cw / 2 + world.dx(it.wx) * ch, sy = ch / 2 + world.dy(it.wy) * ch;
       const on = sx > -80 && sx < cw + 80 && sy > -80 && sy < ch + 80;
       it.el.style.display = on ? 'grid' : 'none';
       if (on) {

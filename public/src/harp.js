@@ -115,17 +115,17 @@ export class Harp {
     }, i * 90));
   }
 
-  // A leaf is a light thing, so it gets the warm round tone rather than the tuned
-  // pipe, and a short tail: rain hits a lot of leaves, and a long one would wash
-  // the whole thing out.
+  // A leaf under rain is the softest thing in the piece, so it speaks with an
+  // electric piano rather than the round tone the stones and the ice use: a
+  // short bright bark and then a long quiet ring. The water that lands on it is
+  // still there underneath, but only just, because the tine is the attack now.
   pluck(leaf, level) {
     const s = this.sound;
     if (!s.ready || !s.ctx) return;
     const pan = Math.max(-1, Math.min(1, (leaf.wx - this.cx) * 1.1));
-    // the pitch is the leaf, but the attack is a real drop of water landing on it
-    s.soft(leaf.freq, s.ctx.currentTime + 0.01, level * 0.95, pan, s.master, 1.15);
+    s.rhodes(leaf.freq, s.ctx.currentTime + 0.01, level * 0.52, pan, s.master, 2.5);
     const rate = Math.max(0.62, Math.min(1.95, leaf.freq / 420 + (Math.random() - 0.5) * 0.06));
-    s.play('hit_droplet', level * 0.5, pan, rate);
+    s.play('hit_droplet', level * 0.2, pan, rate);
     leaf.el.classList.add('struck');
     clearTimeout(leaf.t);
     leaf.t = setTimeout(() => leaf.el.classList.remove('struck'), 380);
@@ -152,7 +152,7 @@ export class Harp {
   update(world, near) {
     const cw = innerWidth, ch = innerHeight, cx = cw / 2, cy = ch / 2;
     for (const l of this.leaves) {
-      const sx = cx + (l.wx - world.x) * ch, sy = cy + (l.wy - world.y) * ch;
+      const sx = cx + world.dx(l.wx) * ch, sy = cy + world.dy(l.wy) * ch;
       const on = sx > -60 && sx < cw + 60 && sy > -60 && sy < ch + 60;
       l.el.style.display = on ? 'grid' : 'none';
       if (on) {

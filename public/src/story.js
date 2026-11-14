@@ -95,8 +95,8 @@ export class Story {
   // Nothing of the water's own shows before you have woken it.
   place(world, near, awake = true) {
     // it waits in open water, so it shows whenever it is on screen
-    const sx = innerWidth / 2 + (this.wx - world.x) * innerHeight;
-    const sy = innerHeight / 2 + (this.wy - world.y) * innerHeight;
+    const sx = innerWidth / 2 + world.dx(this.wx) * innerHeight;
+    const sy = innerHeight / 2 + world.dy(this.wy) * innerHeight;
     const on = awake && !this.active &&
                sx > -40 && sx < innerWidth + 40 && sy > -40 && sy < innerHeight + 40;
     this.dropEl.style.display = on ? 'grid' : 'none';

@@ -26,6 +26,14 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
   darker patches where it is thin. It carries no waves at all: touch it and
   nothing ripples, because it is solid. Every one of them is an instrument. They blend at the edges and
   draw you in. Drag or tap a compass word at the screen edge to travel.
+- **Water that comes back around.** The surface has no edge, but it does have a
+  size: twelve screen-heights across and the same down. Swim far enough in any
+  direction and the same places come round again, and the compass always points
+  the shorter way, which may be out through one side and in through the other.
+  Only the places repeat. The surface itself is a field of noise with no period
+  at all, so coming back to the cove after a long swim finds the cove where you
+  left it and finds whatever water happens to be passing. Nothing seams, because
+  nothing wraps except the arithmetic.
 - **Weather.** Storms are rare, the way they are most days: four to eight minutes
   apart. They come in thick and often, one to two minutes apart, only when it is
   actually raining or storming wherever you are, which the app asks your browser
@@ -74,18 +82,18 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
   play the leaves; the rain does. Each drop that lands on one plucks it, so the
   weather is the performer and you only choose which notes are available to it.
   Pitch runs left to right, low to high, and a storm turns the whole thing into a
-  wind chime. A leaf sounds warm and round rather than metallic, with a short tail,
-  since rain hits a lot of leaves and a long one would wash the whole thing out,
-  and it keeps a real drop of water in the attack: the pitch is the leaf, the
-  sound of the hit is the rain landing on it. Six species of leaf, told apart by outline, proportion and vein:
-  willow, lance, lily, heart, oval and fan. Tap a leaf to take it away, or let them all go.
-  Once there are leaves on the water, keys come up underneath them: three short
-  loops taken in turn at random so the bed never settles into a shape you can
-  predict. They arrive with the first leaf and leave with the last, fade out if
-  you wander away from the rain, and keep playing when the ambient water is set
-  aside, because they belong to the instrument rather than to the weather. All
-  three were tuned by ear to the harp's own G minor; two of the three were a
-  semitone off what their names claimed.
+  wind chime. A leaf speaks with an electric piano: a short bright bark and then a
+  long quiet ring, the way a Rhodes does, because the brightness leaves well
+  before the note does. Every partial gets its own decay rather than the whole
+  stack fading together, which is the whole difference between that and a plain
+  soft tone. The drop of water that landed is still in the attack, but only just,
+  since the tine carries it now. Six species of leaf, told apart by outline,
+  proportion and vein: willow, lance, lily, heart, oval and fan. Tap a leaf to
+  take it away, or let them all go.
+
+  Under the rain there is rain and nothing else. There used to be a pond bed and
+  a bed of keys underneath; both are gone, and the rain itself came up to fill
+  the room they were taking.
 - **The singing bowls**, in the cove. Five of them, standing where they have
   always stood. They are not something you carry about: they are fixtures, and the
   water plays them. G B C D F, the lowest note in the biggest bowl, each a

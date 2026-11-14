@@ -3,7 +3,7 @@ import { Sound } from './audio.js';
 import { Pins } from './pins.js';
 import { Soundings } from './soundings.js';
 import { Creek } from './creek.js';
-import { Names, SHORT } from './names.js';
+import { Names } from './names.js';
 import { SCALES, KEYS } from './soundings.js';
 import { Bowls } from './bowl.js';
 import { Harp } from './harp.js';
@@ -27,7 +27,7 @@ try {
 const sound = new Sound('./audio/');
 const pins = new Pins(sound, surface, document.getElementById('pins'));
 const DEEP = { x: 0.3, y: 1.7, r: 1.1 };   // where the soundings lie
-const CREEK = { x: -2.7, y: 1.8, r: 1.0 };  // where the water runs over the rocks
+const CREEK = { x: -3.5, y: 2.35, r: 1.0 };  // where the water runs over the rocks
 const creek = new Creek(sound, surface, document.getElementById('rocks'),
                         document.getElementById('surge'), CREEK, CREEK.r);
 const soundings = new Soundings(sound, surface, document.getElementById('stones'), DEEP, DEEP.r);
@@ -77,16 +77,39 @@ window.__onedrop = { surface, sound, pins, soundings, bowl, harp, capture, drift
 // ---------- the world ----------
 // Positions are in screen-heights. You start in the cove. Regions blend at their edges
 // and pull you in gently if you drift near while not touching.
+// Spread a little wider than they were: they used to overlap, and an area needs
+// open water around it or arriving in one means nothing.
 const REGIONS = [
-  { key: 'cove',    x: 0,    y: 0,     r: 0.8, inst: 'bowl' },
-  { key: 'rain',    x: 1.35, y: -0.95, r: 1.0, inst: 'harp' },
-  { key: 'river',   x: -1.4, y: 0.5,   r: 1.1, inst: 'sequencer' },
-  { key: 'deep',    x: 0.3,  y: 1.7,   r: 1.1, inst: 'soundings' },
-  { key: 'hollow',  x: -1.05, y: -1.45, r: 1.0, inst: 'cave' },
-  { key: 'ice',     x: -2.55, y: -1.05, r: 1.0, inst: 'crack' },
+  { key: 'cove',    x: 0,     y: 0,     r: 0.8, inst: 'bowl' },
+  { key: 'rain',    x: 1.75,  y: -1.25, r: 1.0, inst: 'harp' },
+  { key: 'river',   x: -1.8,  y: 0.65,  r: 1.1, inst: 'sequencer' },
+  { key: 'deep',    x: 0.4,   y: 2.2,   r: 1.1, inst: 'soundings' },
+  { key: 'hollow',  x: -1.35, y: -1.9,  r: 1.0, inst: 'cave' },
+  { key: 'ice',     x: -3.3,  y: -1.35, r: 1.0, inst: 'crack' },
   { key: 'creek',   x: CREEK.x, y: CREEK.y, r: CREEK.r, inst: 'rocks' },
 ];
-const world = { x: 0, y: 0, vx: 0, vy: 0 }; // position of the viewport center, velocity in heights/sec
+
+// ---------- a world that comes back around ----------
+// The water has no edge, but it does have a size. Swim far enough in any
+// direction and the same places come round again, because every place is really
+// in every tile of an endless grid and you are always shown the nearest copy.
+//
+// Only the places repeat. The surface itself is a field of noise with no period
+// at all, and the viewport's own coordinate is never folded, so coming back to
+// the cove after a long swim finds the cove where you left it and finds the
+// water that happened to be passing. Nothing seams, because nothing wraps but
+// the arithmetic.
+const SPAN = 12;   // screen-heights across, and the same down
+// a coordinate or a difference, taken the short way round
+const fold = v => v - SPAN * Math.round(v / SPAN);
+const world = {
+  x: 0, y: 0, vx: 0, vy: 0,            // viewport centre, velocity in heights/sec
+  span: SPAN,
+  at: fold,                            // a world position, folded into one tile
+  near: fold,                          // a difference, by the shorter way
+  dx(x) { return fold(x - this.x); },  // from here to x, the short way
+  dy(y) { return fold(y - this.y); },
+};
 let pullHold = 0; // after an arrival, the areas let you be for a few seconds
 let steady = 0;   // and after you touch an instrument, nothing moves at all
 // Anything you do to an instrument settles the water: no pull from the areas and
@@ -103,7 +126,7 @@ for (const R of REGIONS) { weights[R.key] = R.key === 'cove' ? 1 : 0; smoothW[R.
 function updateRegions(dt, touching) {
   let nearest = null, nd = Infinity;
   for (const R of REGIONS) {
-    const dx = R.x - world.x, dy = R.y - world.y;
+    const dx = world.dx(R.x), dy = world.dy(R.y);
     const d = Math.hypot(dx, dy);
     // inside: full. edge: soft falloff. beyond 1.3r: nothing.
     weights[R.key] = 1 - smoothstep(R.r * 0.45, R.r * 1.3, d);
@@ -387,7 +410,7 @@ function updateCompass(touching) {
   const cx = innerWidth / 2, cy = innerHeight / 2, mx = 54, my = 44;
   for (const R of REGIONS) {
     const el = compass[R.key];
-    const dx = R.x - world.x, dy = R.y - world.y;
+    const dx = world.dx(R.x), dy = world.dy(R.y);
     const d = Math.hypot(dx, dy);
     const w = smoothW[R.key];
     const a = compassAlpha * (1 - w) * 0.55;
@@ -427,8 +450,8 @@ async function startRecording(x, y) {
   showRec(x, y, true);
   recLabel.textContent = 'listening';
   recArc.style.strokeDashoffset = 251.3;
-  rec.wx = world.x + (x - innerWidth / 2) / innerHeight;
-  rec.wy = world.y + (y - innerHeight / 2) / innerHeight;
+  rec.wx = world.at(world.x + (x - innerWidth / 2) / innerHeight);
+  rec.wy = world.at(world.y + (y - innerHeight / 2) / innerHeight);
   try {
     rec.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
   } catch (err) {
@@ -578,8 +601,8 @@ namingEl.addEventListener('pointerdown', e => e.stopPropagation());
 
 // every ripple of any substance sets off a front that can strike the stones
 const screenToWorld = (x, y) => ({
-  x: world.x + (x - innerWidth / 2) / innerHeight,
-  y: world.y + (y - innerHeight / 2) / innerHeight,
+  x: world.at(world.x + (x - innerWidth / 2) / innerHeight),
+  y: world.at(world.y + (y - innerHeight / 2) / innerHeight),
 });
 surface.onDrop = (x, y, radius, strength) => {
   if (strength < 0.055) return;
@@ -632,8 +655,8 @@ function spawnBelow(now) {
   const speed = 0.055 + Math.random() * 0.075;          // heights per second
   const dur = (reach * 2) / speed;
   below.list.push({
-    x: world.x - Math.cos(ang) * reach,
-    y: world.y - Math.sin(ang) * reach,
+    x: world.at(world.x - Math.cos(ang) * reach),
+    y: world.at(world.y - Math.sin(ang) * reach),
     vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
     size: 0.055 + Math.random() * 0.075,
     born: now, dur: dur * 1000, s: 0, nextRipple: 0,
@@ -657,7 +680,7 @@ function updateBelow(now, dt) {
     const want = Math.min(smoothstep(0, 0.12, age), 1 - smoothstep(0.86, 1, age));
     c.s += (want - c.s) * Math.min(1, dt * 1.5);
     if (slot < 3) {
-      const sx = cw / 2 + (c.x - world.x) * ch, sy = ch / 2 + (c.y - world.y) * ch;
+      const sx = cw / 2 + world.dx(c.x) * ch, sy = ch / 2 + world.dy(c.y) * ch;
       surface.crt[slot * 4] = sx / cw;
       surface.crt[slot * 4 + 1] = 1 - sy / ch;
       surface.crt[slot * 4 + 2] = c.size;
@@ -717,11 +740,14 @@ let mapOpen = false, mapView = null, meEl = null;
 function drawMap() {
   plate.innerHTML = '';
   const w = innerWidth, h = innerHeight, pad = 64;
-  // fit everything worth seeing, plus a margin of open water
+  // Fit the places, not the whole tile. The water comes back around, so drawing
+  // all twelve heights of it would squeeze the seven areas into a knot in the
+  // middle and make the one useful thing about the chart unreadable.
   const items = [
     ...REGIONS.map(r => ({ x: r.x, y: r.y, r: r.r })),
     ...pins.pins.map(p => ({ x: p.wx, y: p.wy, r: 0.1 })),
-    { x: world.x, y: world.y, r: 0.3 },
+    // wherever you have got to, folded back into the one tile the chart draws
+    { x: world.at(world.x), y: world.at(world.y), r: 0.3 },
   ];
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const it of items) {
@@ -769,20 +795,8 @@ function drawMap() {
     });
     plate.appendChild(g);
   }
-  // the cycle is a thing, not a place, so it gets its own mark where the drop waits
-  {
-    const g = document.createElement('div');
-    g.className = 'inst';
-    g.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 3 C12 3 19 11.2 19 15.2 A7 7 0 0 1 5 15.2 C5 11.2 12 3 12 3 Z"/></svg><b>the cycle</b>';
-    g.style.cssText = `left:${sx(story.wx)}px;top:${sy(story.wy) - 19}px`;
-    g.addEventListener('pointerdown', e => {
-      e.stopPropagation();
-      travelTo = { x: story.wx, y: story.wy };
-      haptic(10);
-      setMap(false);
-    });
-    plate.appendChild(g);
-  }
+  // The cycle is a thing rather than a place, so it is no longer marked on the
+  // chart. It is reached from the menu, which is the one way in.
   for (const pin of pins.pins) {
     const m = document.createElement('div'); m.className = 'mp';
     m.style.cssText = `left:${sx(pin.wx)}px;top:${sy(pin.wy)}px`;
@@ -994,26 +1008,9 @@ document.getElementById('names').querySelector('.close')
   .addEventListener('pointerdown', e => { e.stopPropagation(); names.open(false); haptic(6); });
 document.getElementById('names').addEventListener('pointerdown', e => e.stopPropagation());
 
-// Arriving somewhere, the water tells you once what it is called and what that
-// means. Once per area per session, and then it leaves you alone.
-const arrivedEl = document.getElementById('arrived');
-const told = new Set();
-let tellLeft = 0;
-function tellWhereYouAre(dt) {
-  if (tellLeft > 0 && (tellLeft -= dt) <= 0) arrivedEl.classList.remove('show');
-  if (mapOpen || story.active || tellLeft > 0) return;
-  let here = null, best = 0.62;
-  for (const k in smoothW) if (smoothW[k] > best) { best = smoothW[k]; here = k; }
-  if (!here || told.has(here) || !SHORT[here]) return;
-  told.add(here);
-  const s = SHORT[here];
-  arrivedEl.innerHTML = '';
-  const em = document.createElement('em'); em.textContent = s.name;
-  const sp = document.createElement('span'); sp.textContent = s.def;
-  arrivedEl.appendChild(em); arrivedEl.appendChild(sp);
-  arrivedEl.classList.add('show');
-  tellLeft = 11;
-}
+// Arriving somewhere used to raise a panel naming the water and explaining it.
+// It was too much to read while you were trying to listen, so the water says
+// nothing now and the naming lives in the chart menu for anyone who wants it.
 
 function setMap(open) {
   mapOpen = open;
@@ -1196,7 +1193,7 @@ canvas.addEventListener('pointerdown', e => {
     const w = screenToWorld(e.clientX, e.clientY);
     const hit = creek.nearest(w.x, w.y);
     if (hit) {
-      dragRock = { rock: hit, moved: 0, dx: hit.wx - w.x, dy: hit.wy - w.y };
+      dragRock = { rock: hit, moved: 0, dx: world.near(hit.wx - w.x), dy: world.near(hit.wy - w.y) };
       settle(); haptic(10);
     } else if (creek.place(w.x, w.y)) {
       surface.drop(e.clientX, e.clientY, 15, 0.16);
@@ -1355,7 +1352,7 @@ function frame(now) {
     if (travelTo) {
       if (touching) travelTo = null; // grabbing the water takes over
       else {
-        const dx = travelTo.x - world.x, dy = travelTo.y - world.y;
+        const dx = world.dx(travelTo.x), dy = world.dy(travelTo.y);
         const d = Math.hypot(dx, dy);
         const sp = Math.min(1.3, Math.max(0.15, d * 1.9)); // slows as it comes in
         const step = sp * dt;
@@ -1391,7 +1388,6 @@ function frame(now) {
     if (smoothW.river > 0.05) surface.shift[0] -= smoothW.river * 0.10 * dt * innerHeight;
     if ((smoothW.creek || 0) > 0.05) surface.shift[1] -= smoothW.creek * 0.16 * dt * innerHeight;
     updateCompass(touching);
-    tellWhereYouAre(dt);
     if (takenLit > 0 && (takenLit -= dt) <= 0) takenEl.classList.remove('lit');
     pins.update(world, dt, now);
     soundings.update(world, smoothW.deep);
@@ -1414,8 +1410,8 @@ function frame(now) {
     keepEl.style.opacity = keepShown.toFixed(3);
     keepEl.style.pointerEvents = keepShown > 0.5 && capture.state === 'ready' ? 'auto' : 'none';
     if (mapOpen && meEl && mapView) {
-      meEl.style.left = ((world.x - mapView.cx) * mapView.scale + mapView.w / 2) + 'px';
-      meEl.style.top = ((world.y - mapView.cy) * mapView.scale + mapView.h / 2) + 'px';
+      meEl.style.left = ((world.at(world.x) - mapView.cx) * mapView.scale + mapView.w / 2) + 'px';
+      meEl.style.top = ((world.at(world.y) - mapView.cy) * mapView.scale + mapView.h / 2) + 'px';
     }
     // the cave: your voice makes the water move, and a glow swells around it
     if (cave.state === 'singing') {
@@ -1450,7 +1446,6 @@ function frame(now) {
     surface.storm = weather.storm;
     surface.hollow = smoothW.hollow || 0;
     // the keys under the harp: they arrive with the leaves and go with them
-    sound.harp = Math.min(1, harp.leaves.length / 3) * (smoothW.rain || 0);
     surface.creek = Math.min(1, (smoothW.creek || 0) * 1.1);
     surface.frost = Math.min(1, (smoothW.ice || 0) * 1.15);
     surface.freeze = Math.min(1, (smoothW.ice || 0) * 1.25);   // a sheet carries no waves

@@ -12,8 +12,7 @@ const HITS = {
 // looping layers, keyed by what drives them
 const LAYERS = {
   cove:    { file: 'bed_pier',       level: 0.52 },  // water against stone, the sound of home
-  rain:    { file: 'tex_drops',      level: 0.50 },
-  rainbed: { file: 'bed_pond',       level: 0.30 },
+  rain:    { file: 'tex_drops',      level: 0.76 },  // the rain itself, and under the harp it is the whole weather
   river:   { file: 'tex_moves',      level: 0.50 },  // only when the water is being moved
   pour:    { file: 'tex_pouring',    level: 0.30 },
   deep:    { file: 'bed_underwater', level: 0.50 },
@@ -21,11 +20,8 @@ const LAYERS = {
   ice:       { file: 'bed_ice',       level: 0.46 },   // cold wind, and the sheet working against itself
   icemelt:   { file: 'tex_icemelt',   level: 0.34 },   // only once there is open water
   creek:     { file: 'bed_creek',     level: 0.38 },   // chimes carried along by shallow water
-  // Keys under the rain harp, in its own G minor, once there are leaves on the
-  // water to play. Three of them, taken in turn at random so the loop never
-  // settles into a shape you can predict. Not ambience: this one belongs to the
-  // instrument, so setting the ambient water aside leaves it playing.
-  keys: { files: ['bed_keysmonty', 'bed_keysleaf', 'bed_keysyellow'], level: 0.27, dry: true },
+  // There used to be a pond bed and a bed of keys under the rain harp. Both are
+  // gone: under the rain there should be rain, and then only what the leaves say.
 };
 
 export class Sound {
@@ -248,8 +244,7 @@ export class Sound {
     const out = 1 - Math.min(1, (w.hollow || 0) * 1.25);
     const want = {
       cove: w.cove * dry * out,
-      rain: w.rain * (0.75 + storm * 0.5) * out,
-      rainbed: w.rain * 0.85 * out,
+      rain: w.rain * (1.05 + storm * 0.45) * out,
       // moving water is only heard while something is moving it, and a drift alone
       // is not enough: it takes a proper push
       river: w.river * Math.min(1.2, Math.max(0, stir - 0.14) * 1.25) * dry * out,
@@ -258,7 +253,6 @@ export class Sound {
       cavedrips: (w.hollow || 0) * 0.95,
       ice: (w.ice || 0) * out,
       icemelt: (this.melt || 0) * out,
-      keys: (this.harp || 0) * out,
       creek: (w.creek || 0) * out,
     };
     const t = this.ctx.currentTime;
@@ -519,7 +513,12 @@ export class Sound {
 
   bowlLevel() { return this.bowlBus ? this.bowlBus.level : 0; }
 
-  wave(pan = 0) { if (this.ready) this.play('tex_bigwave', 0.5, pan, 0.9 + Math.random() * 0.2); }
+  // The storm's big wave is weather, not an instrument, so it goes through the
+  // ambient bus: setting the ambient water aside takes the storm with it.
+  wave(pan = 0) {
+    if (this.ready) this.play('tex_bigwave', 0.5, pan, 0.9 + Math.random() * 0.2,
+                              this.ambientBus || this.master);
+  }
 
   // a tap on the very end of the chain, for recording what you hear
   captureStream() {
@@ -657,6 +656,45 @@ export class Sound {
     setTimeout(() => { try { out.disconnect(); tone.disconnect(); if (p) p.disconnect(); } catch {} }, 3800);
   }
 
+  // A Rhodes is a little hammer striking a tine beside a tuned bar: a bright
+  // metallic bark that is gone almost at once, over a sine that rings on well
+  // after it. What makes it a Rhodes rather than a soft sine is that the
+  // brightness leaves before the note does, so every partial gets its own decay
+  // instead of the whole stack fading together.
+  rhodes(freq, when, gain, pan, dest, dur = 2.6) {
+    const ctx = this.ctx;
+    const out = ctx.createGain();
+    out.gain.value = gain;
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass'; tone.Q.value = 0.0001;
+    tone.frequency.setValueAtTime(Math.min(9000, freq * 11), when);
+    tone.frequency.exponentialRampToValueAtTime(Math.min(2600, freq * 3.1), when + 0.55);
+    const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (p) { p.pan.value = Math.max(-1, Math.min(1, pan)); out.connect(tone).connect(p).connect(dest); }
+    else out.connect(tone).connect(dest);
+
+    // ratio, level, and how much of the note's length that partial survives.
+    // The last one is the tine: high, quiet, and over in a twentieth of the note.
+    const parts = [[1, 0.60, 1], [2.01, 0.13, 0.42], [3.02, 0.045, 0.26],
+                   [6.18, 0.085, 0.055],
+                   [1.0022, 0.17, 0.78]];   // and a second fundamental a hair sharp, so it moves
+    const made = [];
+    for (const [ratio, lvl, life] of parts) {
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.value = freq * ratio;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.exponentialRampToValueAtTime(lvl, when + 0.007);
+      g.gain.exponentialRampToValueAtTime(0.0001, when + Math.max(0.05, dur * life));
+      o.connect(g).connect(out);
+      o.start(when); o.stop(when + dur + 0.4);
+      made.push(o, g);
+    }
+    setTimeout(() => {
+      try { out.disconnect(); tone.disconnect(); if (p) p.disconnect(); for (const n of made) n.disconnect(); } catch {}
+    }, (dur + 1.4) * 1000);
+  }
+
   // one struck note, whatever the engine
   playVoice(V, when, pan, track, step, dest, drift = 0) {
     const ctx = this.ctx;
@@ -734,7 +772,9 @@ export class Sound {
     const seq = this.seq = {
       bpm: 68, swing: 0, drift: 0, step: 0, running: false, next: this.ctx.currentTime + 0.1,
       pattern: Array.from({ length: 4 }, () => new Array(16).fill(false)),
-      voice: [0, 1, 2, 3],
+      // bubbles, rim, bell and drips: two sampled, one struck, one sampled, so the
+      // grid has something to say the moment you put a dot in it
+      voice: [4, 8, 10, 0],
     };
     // nothing is laid down to begin with: the grid is yours to fill
     const stepLen = () => 60 / seq.bpm / 4;
