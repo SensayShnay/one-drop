@@ -94,6 +94,18 @@ document.getElementById('leave').addEventListener('pointerdown', e => {
   document.body.classList.remove('cycling');
   haptic(8);
 });
+// If the phone takes the GPU away, the water goes dark but the instruments and
+// the sound are still there. Say so in a word, and lift the word when it is back.
+surface.onLost = () => {
+  const st = document.getElementById('status');
+  st.textContent = 'the water has gone still for a moment';
+  st.style.opacity = 0.7;
+};
+surface.onRestored = () => {
+  const st = document.getElementById('status');
+  st.textContent = ''; st.style.opacity = 0;
+  surface.wakeTarget = awake ? 1 : 0;
+};
 window.__onedrop = { surface, sound, pins, soundings, bowl, harp, capture, drift, story, ice, creek, snow }; // dev hook
 
 // ---------- the world ----------
@@ -574,7 +586,7 @@ async function finishRecording() {
   recEl.classList.remove('armed');
   if (rec.discard) { rec.discard = false; return; } // the file picker is taking over
   if (secs < 1.2 || !blob.size) return; // too short to be a memory of anything
-  rec.pin = await pins.add(blob, '', rec.wx, rec.wy);
+  rec.pin = pins.add(blob, '', rec.wx, rec.wy);
   surface.drop(innerWidth / 2, innerHeight / 2, 30, 0.2);
   sound.hit(0.5, 0);
   // ask what to call it
@@ -587,7 +599,7 @@ sampleIn.addEventListener('change', async () => {
   const f = sampleIn.files && sampleIn.files[0];
   sampleIn.value = '';
   if (!f) return;
-  rec.pin = await pins.add(f, f.name.replace(/\.[^.]+$/, '').slice(0, 40), rec.wx, rec.wy);
+  rec.pin = pins.add(f, f.name.replace(/\.[^.]+$/, '').slice(0, 40), rec.wx, rec.wy);
   surface.drop(innerWidth / 2, innerHeight / 2, 30, 0.2);
   sound.hit(0.5, 0);
   namingEl.style.opacity = 1; namingEl.style.pointerEvents = 'auto';
@@ -880,9 +892,10 @@ function drawShelf() {
   shelfInner.innerHTML = '';
   const head = document.createElement('h2'); head.textContent = 'what you have left on the water';
   const sub = document.createElement('div'); sub.className = 'sub';
+  // honest about how long they last: a pin is here while the page is
   sub.textContent = yours
-    ? `${yours} of your own${list.length - yours ? `, and ${list.length - yours} that came with the water` : ''}`
-    : 'nothing of your own yet. hold a finger still on the water to leave one.';
+    ? `${yours} of your own${list.length - yours ? `, and ${list.length - yours} that came with the water` : ''}. yours stay while the page is open.`
+    : 'nothing of your own yet. hold a finger still on the water to leave one. it stays while the page is open.';
   shelfInner.appendChild(head); shelfInner.appendChild(sub);
 
   const sorts = document.createElement('div'); sorts.className = 'sorts';
@@ -1156,19 +1169,9 @@ canvas.addEventListener('pointerdown', e => {
   if (namingEl.style.pointerEvents === 'auto') { closeNaming(); return; }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, t: now, sx: e.clientX, sy: e.clientY, moved: 0, lastHit: now, vx: 0, vy: 0 });
   world.vx = 0; world.vy = 0;
-  // hold still and the water starts listening
-  if (pointers.size === 1) {
-    clearTimeout(holdTimer);
-    holdTimer = setTimeout(() => {
-      const p = pointers.get(e.pointerId);
-      if (!p || p.moved >= 10) return;
-      if (smoothW.hollow > 0.45) startSinging(p.x, p.y);          // the cave listens instead
-      else startRecording(p.x, p.y);
-    }, 700);
-  }
+  clearTimeout(holdTimer);
   // on the ice, pressing splits it: the crack runs for as long as you hold
   if (smoothW.ice > 0.45) {
-    clearTimeout(holdTimer);
     const w = screenToWorld(e.clientX, e.clientY);
     // unless you touched open water, which freezes that hole over on its own
     if (ice.closeAt(w.x, w.y)) {
@@ -1226,6 +1229,18 @@ canvas.addEventListener('pointerdown', e => {
     surface.drop(e.clientX, e.clientY, 13, 0.16);
     settle(); haptic(12);
     return;
+  }
+  // Open water, then. Hold still here and it starts listening. The timer is
+  // armed only now, after every instrument has had its say: it used to be set
+  // before them, so a finger resting on a stone, a bowl, a leaf or a flake was
+  // asked for the microphone after seven tenths of a second.
+  if (pointers.size === 1) {
+    holdTimer = setTimeout(() => {
+      const p = pointers.get(e.pointerId);
+      if (!p || p.moved >= 10) return;
+      if (smoothW.hollow > 0.45) startSinging(p.x, p.y);          // the cave listens instead
+      else startRecording(p.x, p.y);
+    }, 700);
   }
   // every touch lands as a drop, right away
   const strength = 0.3 + Math.random() * 0.15;

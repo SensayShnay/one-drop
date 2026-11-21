@@ -252,19 +252,26 @@ export class Surface {
     const ext = gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float');
     if (!ext) throw new Error('no float render targets');
 
-    this.simProg = program(gl, VERT, SIM);
-    this.drawProg = program(gl, VERT, DRAW);
-    this.us = U(gl, this.simProg, ['prev', 'texel', 'shift', 'damp', 'churn', 't', 'nDrops', 'drops', 'seeds', 'nRims', 'rims']);
-    this.ud = U(gl, this.drawProg, ['field', 'texel', 'res', 'world', 't', 'wake', 'region', 'storm',
-      'daylight', 'warm', 'moon', 'sunX', 'crt', 'crtA', 'hollow', 'clarity', 'pale', 'frost', 'creek']);
-
-    const quad = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    this.vao = gl.createVertexArray();
-    gl.bindVertexArray(this.vao);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    // The GPU can take the context away at any time, and on a phone it does:
+    // iOS discards contexts under memory pressure, and does it most readily to
+    // a web app that has been sitting in the background, which is exactly how
+    // this is meant to be run. Without these two listeners that is a black
+    // screen until someone reloads. With them, the water is rebuilt and fades
+    // back in, flat, as though it had been let be for a while.
+    this.lost = false;
+    canvas.addEventListener('webglcontextlost', e => {
+      e.preventDefault();              // let the browser know we will cope, so it offers it back
+      this.lost = true;
+      this.pending.length = 0;
+      if (this.onLost) this.onLost();
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      this.lost = false;               // first, or resize() will not make targets
+      this.W = this.H = 0;             // force the targets to be made again
+      this.build();
+      this.wake = 0;                   // and it comes up gently rather than all at once
+      if (this.onRestored) this.onRestored();
+    });
 
     this.pending = [];
     this.dropData = new Float32Array(16 * 4);
@@ -281,21 +288,65 @@ export class Surface {
     this.crtA = new Float32Array(3);
     this.world = [0, 0];       // in screen-heights
     this.shift = [0, 0];       // this frame's movement in css px
+    this.build();
+  }
+
+  // Everything that lives on the GPU side, made once at the start and again if
+  // the context is lost and given back. Nothing in here may be kept from before.
+  build() {
+    const gl = this.gl;
+    // extensions belong to the context and go with it: without asking again,
+    // a half-float target is not something the GPU will let us draw into
+    if (!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float')))
+      throw new Error('no float render targets');
+    this.simProg = program(gl, VERT, SIM);
+    this.drawProg = program(gl, VERT, DRAW);
+    this.us = U(gl, this.simProg, ['prev', 'texel', 'shift', 'damp', 'churn', 't', 'nDrops', 'drops', 'seeds', 'nRims', 'rims']);
+    this.ud = U(gl, this.drawProg, ['field', 'texel', 'res', 'world', 't', 'wake', 'region', 'storm',
+      'daylight', 'warm', 'moon', 'sunX', 'crt', 'crtA', 'hollow', 'clarity', 'pale', 'frost', 'creek']);
+
+    this.quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    this.targets = null;
     this.resize();
   }
 
   resize() {
+    if (this.lost) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const W = Math.floor(this.canvas.clientWidth * dpr);
     const H = Math.floor(this.canvas.clientHeight * dpr);
-    if (W === this.W && H === this.H) return;
+    if (!W || !H) return;             // hidden, or not laid out yet: nothing to size to
+    if (W === this.W && H === this.H && this.targets) return;
     this.W = W; this.H = H;
     this.canvas.width = W; this.canvas.height = H;
     const scale = Math.min(1, 640 / Math.max(W, H));
-    this.sw = Math.max(64, Math.floor(W * scale));
-    this.sh = Math.max(64, Math.floor(H * scale));
-    this.targets = [0, 1].map(() => this.makeTarget(this.sw, this.sh));
+    const sw = Math.max(64, Math.floor(W * scale));
+    const sh = Math.max(64, Math.floor(H * scale));
+    const gl = this.gl;
+    const old = this.targets, oldCur = this.cur || 0;
+    this.sw = sw; this.sh = sh;
+    this.targets = [0, 1].map(() => this.makeTarget(sw, sh));
     this.cur = 0;
+    if (old) {
+      // Carry the water across rather than starting from flat. A resize is not
+      // only turning the phone: a keyboard coming up for a pin's name fires one
+      // too, and it used to wipe every ripple on the screen. The field is a
+      // height map, so stretching it a little is harmless.
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, old[oldCur].fb);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.targets[0].fb);
+      gl.blitFramebuffer(0, 0, old.sw || sw, old.sh || sh, 0, 0, sw, sh, gl.COLOR_BUFFER_BIT, gl.LINEAR);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      // and let the old ones go, which they never were before: every orientation
+      // change left two float targets behind on the GPU for the life of the page
+      for (const t of old) { gl.deleteFramebuffer(t.fb); gl.deleteTexture(t.tex); }
+    }
+    this.targets.sw = sw; this.targets.sh = sh;
   }
 
   makeTarget(w, h) {
@@ -332,6 +383,7 @@ export class Surface {
   }
 
   step(time) {
+    if (this.lost || !this.targets) return;
     const gl = this.gl;
     this.wake += (this.wakeTarget - this.wake) * 0.02;
     const cw = this.canvas.clientWidth, ch = this.canvas.clientHeight;

@@ -1,23 +1,14 @@
 // One Drop — pins.
 // Sounds left on the water. Each floats at a fixed place in the world; drift near
-// and it surfaces. Stored on this device (IndexedDB), ready to sync later.
+// and it surfaces.
+//
+// Nothing here is kept between visits. There used to be a store on the device,
+// but a save that fails is invisible, and Safari throws the whole store away
+// after a week without a visit, so what looked like keeping was really a slow
+// way of losing. A pin lasts as long as the page does; keeping one for good is a
+// job for the shared water, when there is one.
 
 import { mark } from './marks.js';
-
-const DB_NAME = 'onedrop', STORE = 'pins', VERSION = 1;
-
-function openDB() {
-  return new Promise((ok, fail) => {
-    const req = indexedDB.open(DB_NAME, VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' });
-    };
-    req.onsuccess = () => ok(req.result);
-    req.onerror = () => fail(req.error);
-  });
-}
-function tx(db, mode) { return db.transaction(STORE, mode).objectStore(STORE); }
 
 // Two pins are here from the start, so the water is never empty.
 const SEEDED = [
@@ -34,37 +25,12 @@ export class Pins {
     this.onHold = null;   // callback(pin) when one is held down long enough to dissolve
   }
 
-  async load() {
-    let saved = [];
-    try {
-      const db = await openDB();
-      saved = await new Promise((ok, fail) => {
-        const r = tx(db, 'readonly').getAll();
-        r.onsuccess = () => ok(r.result || []); r.onerror = () => fail(r.error);
-      });
-    } catch (e) { console.warn('pins: no local store', e); }
-    const dismissed = new Set(JSON.parse(localStorage.getItem('onedrop.dismissed') || '[]'));
-    for (const p of SEEDED) if (!dismissed.has(p.id)) this.attach({ ...p });
-    for (const p of saved) this.attach(p);
+  load() {
+    for (const p of SEEDED) this.attach({ ...p });
   }
 
-  async save(pin) {
-    try {
-      const db = await openDB();
-      const { id, name, wx, wy, blob, created } = pin;
-      tx(db, 'readwrite').put({ id, name, wx, wy, blob, created });
-    } catch (e) { console.warn('pins: could not save', e); }
-  }
-
-  async forget(pin) {
+  forget(pin) {
     this.detach(pin);
-    if (pin.seeded) {
-      const d = JSON.parse(localStorage.getItem('onedrop.dismissed') || '[]');
-      d.push(pin.id); localStorage.setItem('onedrop.dismissed', JSON.stringify(d));
-      return;
-    }
-    try { const db = await openDB(); tx(db, 'readwrite').delete(pin.id); }
-    catch (e) { console.warn('pins: could not forget', e); }
   }
 
   attach(pin) {
@@ -110,7 +76,7 @@ export class Pins {
       el.classList.remove('holding', 'carrying');
       const moved = drag && drag.moved >= 7;
       drag = null;
-      if (moved) { if (!pin.seeded) this.save(pin); return; }
+      if (moved) return;
       if (!held && performance.now() - downAt < 1300) this.touch(pin);
     };
     el.addEventListener('pointerup', up);
@@ -125,13 +91,11 @@ export class Pins {
     this.pins = this.pins.filter(p => p !== pin);
   }
 
-  async add(blob, name, wx, wy) {
-    const pin = this.attach({
+  add(blob, name, wx, wy) {
+    return this.attach({
       id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       name: name || '', wx, wy, blob, created: Date.now(),
     });
-    await this.save(pin);
-    return pin;
   }
 
   // A pin carries a real recording, so it ought to be possible to take it with
@@ -155,13 +119,11 @@ export class Pins {
 
   moveTo(pin, wx, wy) {
     pin.wx = wx; pin.wy = wy;
-    if (!pin.seeded) this.save(pin);
   }
 
   rename(pin, name) {
     pin.name = name;
     pin.el.querySelector('em').textContent = name;
-    if (!pin.seeded) this.save(pin);
   }
 
   // resolve the sound for a pin, once, on demand

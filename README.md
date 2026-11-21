@@ -239,7 +239,14 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
   to let it dissolve.
   **Hold a finger still on the water** to record a new one, release to keep it,
   then give it a name. While it is listening, **slide your finger up** to add an
-  audio file instead of recording. Stored on this device only (IndexedDB) for now.
+  audio file instead of recording.
+
+  A pin lasts as long as the page does. There used to be a store on the device,
+  but a save that fails is invisible, and Safari throws a site's storage away
+  after a week without a visit, so what looked like keeping was really a slow way
+  of losing. The shelf says so plainly. Keeping one for good is the job of the
+  shared water, when there is one, and the download in the shelf is how to take
+  one with you until then.
 - **Looking after them.** A pin is a file, and files want looking after, so the
   chart has a way in to all of them at once: *look after what you have left*. Every
   pin is listed with the area it is sitting in and how long ago you made it, and
@@ -301,6 +308,20 @@ The recordings in `audio/` are compressed copies of commercial sample-pack
 material, used here as the voice of the piece. They are published with it so the
 work runs, not as a sample library: please do not lift them for your own
 projects. The code is another matter and you are welcome to it.
+
+## When the phone takes the GPU away
+
+iOS discards WebGL contexts under memory pressure, and does it most readily to a
+web app that has been sitting in the background, which is exactly how this is
+meant to be run. The surface listens for the loss, says `the water has gone still
+for a moment`, and rebuilds everything that lived on the GPU when the context is
+given back: programs, the float extension (which belongs to the context and goes
+with it), the quad, and fresh targets. The water comes up flat and fades back in.
+The instruments and the sound are DOM and Web Audio and were never affected.
+
+A resize no longer wipes the water either. The old field is blitted into the new
+targets and the old ones are freed, which they never were: every turn of the
+phone used to leave two float textures behind for the life of the page.
 
 ## Sound on an iPhone
 
