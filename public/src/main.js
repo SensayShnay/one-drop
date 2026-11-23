@@ -12,6 +12,7 @@ import { Capture } from './capture.js';
 import { MARKS } from './marks.js';
 import { Drift } from './drift.js';
 import { Story } from './story.js';
+import { Guide } from './guide.js';
 import { Ice } from './ice.js';
 
 const canvas = document.getElementById('c');
@@ -106,7 +107,12 @@ surface.onRestored = () => {
   st.textContent = ''; st.style.opacity = 0;
   surface.wakeTarget = awake ? 1 : 0;
 };
-window.__onedrop = { surface, sound, pins, soundings, bowl, harp, capture, drift, story, ice, creek, snow }; // dev hook
+// The way in. The first time on this device, a few cards before the water; it
+// ends on "touch the water" and gets out of the way, so the touch that enters
+// is a real one. The chart has a way back to it for anyone who wants it again.
+const guide = new Guide(document.getElementById('guide'));
+if (!Guide.seen()) guide.start(true);
+window.__onedrop = { surface, sound, pins, soundings, bowl, harp, capture, drift, story, ice, creek, snow, guide }; // dev hook
 
 // ---------- the world ----------
 // ---------- and that it comes back around ----------
@@ -853,6 +859,7 @@ function drawMap() {
   link('namesopen', 'the naming of water', () => names.open(true));
   // the cycle belongs here too: it is something to go and do, like the rest
   link('cycleopen', 'the cycle', () => { setMap(false); story.begin(); });
+  link('guideopen', 'how it works', () => { setMap(false); guide.start(false); });
   plate.appendChild(links);
 }
 

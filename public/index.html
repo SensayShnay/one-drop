@@ -502,6 +502,71 @@
     border: 1px solid rgba(180, 206, 224, 0.3); cursor: pointer; opacity: 0.7;
     background: rgba(5, 9, 13, 0.8);
   }
+  /* ---------- the way in: a few cards the first time ---------- */
+  #veil > div { transition: opacity 0.9s ease; }
+  body.guiding #veil > div { opacity: 0; }
+  #guide {
+    position: fixed; inset: 0; z-index: 40; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: max(24px, env(safe-area-inset-top)) 26px max(24px, env(safe-area-inset-bottom));
+    background: radial-gradient(ellipse at 50% 45%, rgba(6, 12, 19, 0.55), rgba(4, 7, 12, 0.88));
+    font-family: 'Cormorant Garamond', Georgia, serif; color: rgba(222, 236, 246, 0.92);
+    opacity: 0; transition: opacity 0.9s ease;
+    -webkit-user-select: none; user-select: none;
+  }
+  #guide.open { display: flex; opacity: 1; animation: guidebg 0.9s ease both; }
+  @keyframes guidebg { from { opacity: 0; } to { opacity: 1; } }
+  #guide.leaving { opacity: 0; pointer-events: none; animation: none; transition: opacity 0.6s ease; }
+  #guide .card {
+    width: min(84vw, 380px); text-align: center; cursor: pointer;
+    min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  #guide .card.in { animation: guidein 0.7s ease both; }
+  @keyframes guidein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  #guide .fig { width: 150px; height: 112px; margin-bottom: 18px; }
+  #guide .fig svg { width: 100%; height: 100%; overflow: visible; }
+  #guide .fig circle, #guide .fig path { fill: none; stroke: rgba(220, 240, 250, 0.82); stroke-width: 1.3; stroke-linecap: round; }
+  #guide .fig text { fill: rgba(220, 240, 250, 0.6); font: italic 10px 'Cormorant Garamond', Georgia, serif; text-anchor: middle; letter-spacing: 0.08em; }
+  #guide h2 { font-weight: 300; font-style: italic; letter-spacing: 0.12em; font-size: 23px; margin: 0 0 14px; }
+  #guide p { font-size: 16.5px; line-height: 1.6; margin: 0; opacity: 0.8; }
+  #guide .foot {
+    width: min(84vw, 380px); margin-top: 30px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  #guide button {
+    background: none; border: 0; color: inherit; font: italic 15px 'Cormorant Garamond', Georgia, serif;
+    letter-spacing: 0.12em; padding: 12px 6px; cursor: pointer; opacity: 0.62; min-width: 64px;
+  }
+  #guide button.next {
+    opacity: 0.95; border: 1px solid rgba(200, 226, 240, 0.32); border-radius: 22px; padding: 10px 20px;
+  }
+  #guide button:focus-visible { outline: 1px solid rgba(220, 240, 250, 0.7); outline-offset: 3px; }
+  #guide .dots { display: flex; gap: 8px; }
+  #guide .dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(220, 240, 250, 0.22); transition: background 0.4s; }
+  #guide .dots i.on { background: rgba(220, 240, 250, 0.85); }
+  /* the little figures move, gently */
+  #guide .fall { fill: rgba(236, 248, 255, 0.9) !important; stroke: none !important; animation: gfall 2.6s ease-in infinite; }
+  @keyframes gfall { 0% { transform: translateY(-6px); opacity: 0; } 15% { opacity: 1; } 55% { transform: translateY(26px); opacity: 1; } 62%, 100% { transform: translateY(26px); opacity: 0; } }
+  #guide .ring { transform-origin: 60px 58px; animation: gring 2.6s ease-out infinite; opacity: 0; }
+  #guide .ring.r2 { animation-delay: 0.25s; } #guide .ring.r3 { animation-delay: 0.5s; }
+  @keyframes gring { 0%, 55% { transform: scale(0.2); opacity: 0; } 60% { opacity: 0.9; } 100% { transform: scale(3.4); opacity: 0; } }
+  #guide .you { fill: rgba(236, 248, 255, 0.9) !important; stroke: none !important; animation: gyou 4s ease-in-out infinite; }
+  #guide .trail { stroke-dasharray: 3 4; opacity: 0.5; }
+  @keyframes gyou { 0%, 100% { transform: none; } 50% { transform: translate(18px, -9px); } }
+  #guide .eight circle { animation: gpulse 3.2s ease-in-out infinite; }
+  #guide .eight circle:nth-child(2n) { animation-delay: 0.4s; } #guide .eight circle:nth-child(3n) { animation-delay: 0.9s; }
+  @keyframes gpulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+  #guide .arcbg { opacity: 0.2; }
+  #guide .arc { stroke-dasharray: 138.2; stroke-dashoffset: 138.2; animation: garc 3.4s linear infinite; }
+  @keyframes garc { 0% { stroke-dashoffset: 138.2; } 80%, 100% { stroke-dashoffset: 0; } }
+  #guide .glow { fill: rgba(236, 248, 255, 0.85) !important; stroke: none !important; animation: gpulse 1.7s ease-in-out infinite; }
+  #guide .corner circle, #guide .corner path { stroke-width: 1.1; }
+  @media (prefers-reduced-motion: reduce) {
+    #guide *, #guide .card.in { animation: none !important; }
+    #guide .ring, #guide .fall { opacity: 0.8; }
+    #guide .arc { stroke-dashoffset: 40; }
+  }
+
   /* the snowfield: crystals coming down towards the surface */
   #snowfield {
     position: fixed; inset: 0; pointer-events: none; z-index: 8;
@@ -797,6 +862,7 @@
 <body>
 <canvas id="c"></canvas>
 <div id="veil"><div><h1>one drop</h1><p>touch the water</p></div></div>
+<div id="guide"></div>
 <svg id="surge"></svg>
 <div id="rocks"></div>
 <svg id="cracks"></svg>

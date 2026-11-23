@@ -19,6 +19,14 @@ needs the https mode. On the Mac, plain http on localhost is already secure.
   instrument is actually being played the water holds still, so nothing drifts out
   from under your hand mid-note. Ripples are
   irregular and throw off satellite droplets.
+- **The way in.** The first time on a device, six short cards come up before
+  the water: a touch is a drop, how to drift and travel, that every place is an
+  instrument, how to leave a sound, and what the four corner controls are. Each
+  has a small moving figure in the piece's own line work. It ends on "now touch
+  the water" and gets out of the way, so the touch that enters is a real one on
+  the water rather than a tap on a button. Skip, swipe, the arrow keys and
+  Escape all work. It is remembered on the device and not shown again; *how it
+  works* in the chart menu brings it back.
 - **Eight regions.** cove (home), rain, river, deep, the creek, the snowfield, the hollow (a cave of wet
   stone, close and dark, with its own dripping ambience and a long reverb), and
   the ice: a frozen sheet rather than water, pale and matte, with a grain of its
@@ -292,6 +300,7 @@ Cloudflare config, `serve.py`, this file — is plumbing, and is never served.
 - `public/src/story.js`  the cycle: the eight stages and what each does to the water
 - `public/src/creek.js`  the creek: the rocks, the surge, and what each one rings
 - `public/src/names.js`  the naming of water: the index, and what each kind is
+- `public/src/guide.js`  the way in: the cards a first visit sees
 - `public/src/snow.js`  the snowfield: how a flake is grown, and how its shape becomes its chord
 - `public/src/ice.js`  the ice: how a crack runs and branches, and the holes you melt
   (the echo cave lives in audio.js `openCave`/`scatter` and main.js)
